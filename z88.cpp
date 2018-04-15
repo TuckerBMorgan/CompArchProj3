@@ -137,10 +137,15 @@ void ex_stage() {
                 case 6:
                     ex_alu.perform(BusALU::op_xor);
                 break;
+                case 7:
+                //JONATHAN!!!! a good place for you to start
+                //nor isnt a op that BusALU can do, so need to find solution to this
+//                    ex_alu.perform(BusALU::op_nor);
+                break;
             }
         }
         else {
-            
+
         }
 
         exmem.alu_out->latchFrom(ex_alu.OUT());
