@@ -1,0 +1,48 @@
+Self Evaluation Form
+
+1. *Directions*
+
+Please use this form to discuss your contributions to the team effort,
+i.e., how do you view your efforts and accomplishments relative to the
+efforts and accomplishments of your team, and what were your major
+contributions to the project?
+
+2. *Profile* (Fill in each blank)
+
+Name __________________________________
+
+3. *Overall Contribution*
+
+List the portions of the solution you worked on:
+
+	[LIST PORTIONS HERE, INDICATING THE PERCENTAGE OF THIS PART OF
+	THE PROJECT WRITTEN BY YOU (UP TO 100%)]
+
+For the team project as a whole, estimate your contribution as a
+percentage of the effort.  Do this separately for the design of the
+project and the implementation (coding and testing) of the project.
+
+	Overall Team Project    ______    
+
+	Project Design          ______    
+
+	Project Implementation  ______    
+
+
+4. *Relative Grade*
+
+In your estimation what grade, relative to the team earned grade, do
+you think you deserve?
+
+	_____ The same grade as the team
+
+	_____ A higher grade than the team (how many grades higher? ____)
+
+	_____ A lower grade than the team (how many grades lower? ____)
+
+5. *Comments*
+
+Feel free to add any other comments (pro or con) that relate to your
+performance, or to clarify any earlier responses.
+
+

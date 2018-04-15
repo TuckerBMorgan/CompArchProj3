@@ -1,0 +1,74 @@
+#!/bin/sh
+#
+# RUN - run test files
+#
+# usage:
+#	RUN [ name.obj ... ] 
+#
+#	name.obj:	run only the listed object file(s)
+
+program="z88"
+suffix="myout"
+list=""
+
+#
+# process command-line arguments
+#
+
+#
+# any more arguments must be object files to be tested
+#
+
+if [ $# -eq 0 ]
+then
+
+	#
+	# none - test all the object files
+	#
+	list="$list *.obj"
+
+else
+
+	#
+	# test only the specified object files
+	#
+	while [ $# -gt 0 ]
+	do
+		list="$list $1"
+		shift
+	done
+
+fi
+
+#
+# start the testing
+#
+for f in $list
+do
+
+	printf "Testing %s ..." $f
+
+	#
+	# run the simulator on this object file
+	#
+	bn="`basename $f .obj`"
+	rm -f $bn.out $bn.diffs
+	./$program $f > $bn.out
+
+	#
+	# see if the results match exactly
+	#
+	cmp -s $bn.$suffix $bn.out
+	if [ $? -eq 0 ]
+	then
+		rm -f $bn.out
+		printf " OK\n"
+	else
+		#
+		# no - generate a difference listing
+		#
+		diff $bn.$suffix $bn.out > $bn.diffs
+		printf " output in %s, diffs in %s\n" $bn.out $bn.diffs
+	fi
+
+done

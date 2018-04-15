@@ -1,0 +1,11 @@
+CPU "ARCH" Simulator, 2.5a(Jan 22 2015)
+-----------------------------------------
+
+IMemory sets starting address to 100
+DMemory sets starting address to 100
+00000100:  00 3f ???????
+Machine Halted - undefined instruction
+
+Simulated time 11 cycles
+
+LAST CPUObject DESTROYED; END OF SIMULATION

@@ -1,0 +1,24 @@
+CPU "ARCH" Simulator, 2.5a(Jan 22 2015)
+-----------------------------------------
+
+IMemory sets starting address to 100
+DMemory sets starting address to 100
+00000100:  23    LW      R1[aaaaaaaa]
+00000104:  23    LW      R2[55555555]
+00000108:  01    NOP    
+0000010c:  01    NOP    
+00000110:  01    NOP    
+00000114:  00 07 BREAK  
+     R1[aaaaaaaa]  R2[55555555]
+00000118:  15    ORI     R7[aaaaffff]
+0000011c:  15    ORI     R8[aaaabbbb]
+00000120:  15    ORI     R9[5555dddd]
+00000124:  16    XORI    R10[aaaaffff]
+00000128:  16    XORI    R11[aaaa3333]
+0000012c:  16    XORI    R12[5555cccc]
+00000130:  00 00 HALT   
+Machine Halted - HALT instruction executed
+
+Simulated time 35 cycles
+
+LAST CPUObject DESTROYED; END OF SIMULATION

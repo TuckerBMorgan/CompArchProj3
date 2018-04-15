@@ -1,0 +1,43 @@
+Important files:
+
+	header.mak	for use with 'gmakemake > Makefile'
+
+	*.asm		sample source programs
+	*.obj		sample object programs
+	*.out		sample output files
+
+	RUN		script to run z88 against the object files
+
+You can create your own object files by using the simple assembler (found
+in the project's pub directory, /usr/local/pub/wrc/courses/arch/z88).
+See the README.z88asm file there for details.
+
+Test files have the following naming convention:
+
+	handout.asm	sample program from the project specification
+	err-*.asm	tests for error detection
+	f-*.asm		tests that require forwarding
+	s-*.asm		tests that require stalling
+	fs-*.asm	tests that require forwarding and stalling
+	*.asm		tests that don't require forwarding or stalling
+
+Object files are created this way:
+
+	z88asm file.asm > file.obj
+
+The assembly language syntax is described in the README.z88asm file.
+
+The RUN script can be used to test your simulator against any or all of
+the supplied test programs.  It will run your simulator against one or
+more object files and compare the results against my sample output; if
+there are any differences, a difference listing will be generated.
+
+You can give object file names on the command line to test against only
+those specifie files; if none are listed, all object files are tested.
+
+Run the script from inside the directory that contains your simulator.
+Here are some example commands:
+
+	RUN				run against all .obj files
+	RUN add.obj			run only add 
+	RUN add.obj sub.obj		run only these two tests

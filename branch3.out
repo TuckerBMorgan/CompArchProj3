@@ -1,0 +1,41 @@
+CPU "ARCH" Simulator, 2.5a(Jan 22 2015)
+-----------------------------------------
+
+IMemory sets starting address to 50
+DMemory sets starting address to 50
+00000050:  27    LUI     R22[ffff0000]
+00000054:  02    J      
+00000058:  27    LUI     R23[7fff0000]
+00000100:  01    NOP    
+00000104:  01    NOP    
+00000108:  3c    BEQ    
+0000010c:  01    NOP    
+00000110:  02    J      
+00000114:  27    LUI     R11[0ace0000]
+00000200:  01    NOP    
+00000204:  01    NOP    
+00000208:  3c    BEQ    
+0000020c:  01    NOP    
+00000218:  02    J      
+0000021c:  27    LUI     R12[0ace0000]
+00000300:  01    NOP    
+00000304:  01    NOP    
+00000308:  3d    BNE    
+0000030c:  01    NOP    
+00000318:  02    J      
+0000031c:  27    LUI     R13[0ace0000]
+00000400:  01    NOP    
+00000404:  01    NOP    
+00000408:  3d    BNE    
+0000040c:  01    NOP    
+00000410:  02    J      
+00000414:  27    LUI     R14[0ace0000]
+00000500:  00 07 BREAK  
+    R11[0ace0000] R12[0ace0000] R13[0ace0000] R14[0ace0000]
+    R22[ffff0000] R23[7fff0000]
+00000504:  00 00 HALT   
+Machine Halted - HALT instruction executed
+
+Simulated time 67 cycles
+
+LAST CPUObject DESTROYED; END OF SIMULATION

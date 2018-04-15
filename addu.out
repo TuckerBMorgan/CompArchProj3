@@ -1,0 +1,17 @@
+CPU "ARCH" Simulator, 2.5a(Jan 22 2015)
+-----------------------------------------
+
+IMemory sets starting address to 100
+DMemory sets starting address to 100
+00000100:  27    LUI     R1[7fff0000]
+00000104:  23    LW      R8[00000001]
+00000108:  23    LW      R9[0000ffff]
+0000010c:  01    NOP    
+00000110:  01    NOP    
+00000114:  01    NOP    
+00000118:  00 11 ADDU   
+Machine Halted - unimplemented instruction
+
+Simulated time 23 cycles
+
+LAST CPUObject DESTROYED; END OF SIMULATION
