@@ -38,7 +38,11 @@ void if_stage() {
 
 
     //IF/ID.IR ← Mem[PC];
-    ifid.ir->latchFrom(instr_abus.OUT());
+    instr_abus.IN().pullFrom(pc);
+    instr_mem.MAR().latchFrom(instr_abus.OUT());
+    Clock::tick();
+    instr_mem.read();
+    ifid.ir->latchFrom(instr_mem.READ());
     Clock::tick();
 
     //all instructions have the opcode in the first 6 bits
@@ -103,13 +107,15 @@ void ex_stage() {
 
 
     long ir_type = 0;
-    //ALU
+   if(ir_type == 0) {//FAKE ALU THIS NEEDS ACTUAL VALUE
+
+     //ALU
     /*
         EX/MEM.IR ← ID/EX.IR;
         if R-R EX/MEM.ALUOutput ← ID/EX.A func ID/EX.B;
         else   EX/MEM.ALUOutput ← ID/EX.A func ID/EX.Imm;
     */
-   if(ir_type == 0) {//FAKE ALU THIS NEEDS ACTUAL VALUE
+  
         ex_ir_thru.IN().pullFrom(*idex.ir);
         exmem.ir->latchFrom(ex_ir_thru.OUT());//this wil get excuted when we perform the alu op
 
@@ -118,7 +124,7 @@ void ex_stage() {
         int func = (int)(*idex.ir)(2, 0);//this is the operation we are performing with ex_alu
         if(is_slt_or_not) {
             switch (func) {
-                case 0:            
+                case 0:
                 case 1:
                     //ADD, and ADDU
                     ex_alu.perform(BusALU::op_add);
@@ -157,19 +163,15 @@ void ex_stage() {
    }
 
 
-    //Load/Store 
-    /*
-        EX/MEM.IR ← ID/EX.IR;
-        EX/MEM.ALUOutput ← ID/EX.A + ID/EX.Imm;
-        EX/MEM.B ← ID/EX.B;
-    */
-
-   if(ir_type == 1) {//FAKE FAKE FAKE FAKE
-        
+   if(ir_type == 1) {//FAKE FAKE FAKE FAKE LOAD STORE FLAG VALUE
 
         //EX/MEM.IR ← ID/EX.IR;
         ex_ir_thru.IN().pullFrom(*idex.ir);
         exmem.ir->latchFrom(ex_ir_thru.OUT());
+        
+        //EX/MEM.B ← ID/EX.B;
+        b_thru.IN().pullFrom(*idex.b);
+        exmem.b->latchFrom(b_thru.OUT());
         Clock::tick();
 
         //EX/MEM.ALUOutput ← ID/EX.A + ID/EX.Imm;
@@ -180,60 +182,122 @@ void ex_stage() {
         Clock::tick();
    }
 
-    //Branch
-    /*
-        EXS/MEM.ALUOutput ← ID/EX.NPC + (ID/EX.Imm << 2);
-        EX/MEM.cond ← (ID/EX.A == 0);
-    */
+
 
    if(ir_type == 2) {//THIS IS FAKE SO FAKE THE FAKEST
-        ex_alu.OP1().pullFrom(*idex.npc);
-        ex_alu.OP2().pullFrom(*index.imm);//WE ARE MISSING THE << 2
-        exmem.alu_out->latchFrom(ex_alu.OUT());
 
-    //    EX/MEM.cond ← (ID/EX.A == 0);?????hmmmm
+       //Branch
+        
+        /*
+        EXS/MEM.ALUOutput ← ID/EX.NPC + (ID/EX.Imm << 2);
+        EX/MEM.cond ← (ID/EX.A == 0);
+        */
+
+        ex_alu.OP1().pullFrom(*idex.imm);
+        ex_alu.OP2().pullFrom(const_two);//we need something with the value 2
+        ex_alu.perform(BusALU::op_lshift);
+        idex.imm->latchFrom(ex_alu.OUT());//THIS MIGHT ALSO BE VERY WRONG
+        Clock::tick();
+
+        ex_alu.OP1().pullFrom(*idex.npc);
+        ex_alu.OP2().pullFrom(*idex.imm);//THIS MIGHT BE VERY WRONG
+        ex_alu.perform(BusALU::op_add);
+        exmem.alu_out->latchFrom(ex_alu.OUT());
+        
+        //    EX/MEM.cond ← (ID/EX.A == 0);?????hmmmm
+        /*
+        if(idex.a->value() != 0) {
+            op1_bus.IN().pullFrom(reg_file[0]);
+            exmem.cond.latchFrom(op1.OUT());
+        }
+        else {
+
+        }
+        */
+
+
+        Clock::tick();
+
+
+
+
         
 
         Clock::tick();
    }
 }
 
-/*
-MEM stage RTL
-ALU instructions:
-
-Load/store instructions:
-
-    MEM/WB.IR ← EX/MEM.IR;
-    if Load  MEM/WB.LMD ← Mem[EX/MEM.ALUOutput];
-    if Store Mem[EX/MEM.ALUOutput] ← EX/MEM.B;
-
-Branch instructions:
-    Idle 
-*/
-
 void mem() {
     int fake_op_dis = 0;
+    if(fake_op_dis == 0) {//ALU OPCODE
 
-
-   if(fake_op_dis == 0) {//ALU OPCODE
-
-       /*
+        /*
         MEM/WB.IR ← EX/MEM.IR;
         MEM/WB.ALUOutput ← EX/MEM.ALUOutput;
-       */
+        */
 
         mem_ir_thru.IN().pullFrom(*exmem.ir);
         mem_alu_out_thru.IN().pullFrom(*exmem.ir);
-        memwb.ir.latchFrom(mem_ir_thru.OUT());
-        memwb.alu_out.latchFrom(mem_alu_out_thru.OUT());
+        memwb.ir->latchFrom(mem_ir_thru.OUT());
+        memwb.alu_out->latchFrom(mem_alu_out_thru.OUT());
         Clock::tick();
-   }
-
-   else if (fake_op_dis == 1) {
+    }
+    else if (fake_op_dis == 1) {
+        /*
+        Load/store instructions:
+        MEM/WB.IR ← EX/MEM.IR;
+        */
         mem_ir_thru.IN().pullFrom(*exmem.ir);
-        memwb.ir.latchFrom(mem_ir_thru.OUT());
-        Clock::tick();       
+        memwb.ir->latchFrom(mem_ir_thru.OUT());
+
+        if(1) {//if Load
+
+            //Mem[EX/MEM.ALUOutput]
+            mem_abus.IN().pullFrom(*exmem.alu_out);
+            data_mem.MAR().latchFrom(mem_abus.OUT());
+            Clock::tick();
+            
+            //MEM/WB.LMD ← Mem[EX/MEM.ALUOutput]
+            data_mem.read();
+            memwb.lmd->latchFrom(data_mem.READ());
+            Clock::tick();
+        }
+        else if(2) {
+
+        }
+
+
+    }
+    else if (fake_op_dis == 3) {
+        /*
+        Branch instructions:
+            Idle 
+        //this page left intentionally left blank
+        */
+    }
+}
+
+
+void wb() {
+    /*
+ALU instructions:
+
+    reg[MEM/WB.IR[rd]] ← MEM/WB.ALUOutput;
+      or
+    reg[MEM/WB.IR[rt]] ← MEM/WB.ALUOutput;
+
+Load/store instructions:
+
+    if Load reg[MEM/WB.IR[rt]] ← MEM/WB.LMD;
+
+Branch instructions:
+    Idle 
+    */
+
+   int fake_op_dis = 0;
+
+   if (fake_op_dis == 0) {
+
    }
 }
 

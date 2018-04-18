@@ -21,6 +21,7 @@ extern Bus mux_to_ifid;
 extern StorageObject const_addr_inc;
 extern StorageObject const_valid_on;
 extern StorageObject const_valid_off;
+extern StorageObject const_two;
 
 // IF/ID components
 

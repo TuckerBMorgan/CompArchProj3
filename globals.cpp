@@ -8,6 +8,7 @@ Bus instr_abus("INSTR_ABUS", CPU_BITS);
 StorageObject const_addr_inc("CONST_ADDR_INCR", CPU_BITS, 0x04);
 StorageObject const_valid_on("CONST_VALID_ON", CPU_BITS, 0x01);
 StorageObject const_valid_off("CONST_VALID_OFF", CPU_BITS, 0x00);
+StorageObject const_two("CONST_TWO", CPU_BITS, 0x02);
 StorageObject mdr("mdr", CPU_BITS);
 Bus valid_bus("VALID_BUS", V_BITS);
 
