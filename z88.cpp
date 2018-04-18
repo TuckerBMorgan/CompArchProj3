@@ -88,7 +88,6 @@ void id_stage() {
     id_pc_thru.IN().pullFrom(*ifid.pc);
     id_npc_thru.IN().pullFrom(*ifid.npc);
     id_v_thru.IN().pullFrom(*ifid.v);
-    Clock::tick();
 
     idex.ir->latchFrom(id_ir_thru.OUT());//ID/EX.IR ↞ IF/ID.IR;
     idex.pc->latchFrom(id_pc_thru.OUT());//IDEX.PC <- IF/ID.PC;
@@ -112,7 +111,6 @@ void ex_stage() {
     */
    if(ir_type == 0) {//FAKE ALU THIS NEEDS ACTUAL VALUE
         ex_ir_thru.IN().pullFrom(*idex.ir);
-        Clock::tick();
         exmem.ir->latchFrom(ex_ir_thru.OUT());//this wil get excuted when we perform the alu op
 
         ex_alu.OP1().pullFrom(*idex.a);
@@ -151,6 +149,7 @@ void ex_stage() {
         }
         else {
             //JONATHAN!!!! find a way to do the compare for slt, and sltu
+            //so we can do the slt, sltu instructions
         }
 
         exmem.alu_out->latchFrom(ex_alu.OUT());
@@ -166,7 +165,19 @@ void ex_stage() {
     */
 
    if(ir_type == 1) {//FAKE FAKE FAKE FAKE
+        
 
+        //EX/MEM.IR ← ID/EX.IR;
+        ex_ir_thru.IN().pullFrom(*idex.ir);
+        exmem.ir->latchFrom(ex_ir_thru.OUT());
+        Clock::tick();
+
+        //EX/MEM.ALUOutput ← ID/EX.A + ID/EX.Imm;
+        ex_alu.OP1().pullFrom(*idex.a);
+        ex_alu.OP2().pullFrom(*idex.imm);
+        ex_alu.perform(BusALU::op_add);
+        exmem.alu_out->latchFrom(ex_alu.OUT());
+        Clock::tick();
    }
 
     //Branch
@@ -176,10 +187,55 @@ void ex_stage() {
     */
 
    if(ir_type == 2) {//THIS IS FAKE SO FAKE THE FAKEST
+        ex_alu.OP1().pullFrom(*idex.npc);
+        ex_alu.OP2().pullFrom(*index.imm);//WE ARE MISSING THE << 2
+        exmem.alu_out->latchFrom(ex_alu.OUT());
 
+    //    EX/MEM.cond ← (ID/EX.A == 0);?????hmmmm
+        
+
+        Clock::tick();
    }
 }
 
+/*
+MEM stage RTL
+ALU instructions:
+
+Load/store instructions:
+
+    MEM/WB.IR ← EX/MEM.IR;
+    if Load  MEM/WB.LMD ← Mem[EX/MEM.ALUOutput];
+    if Store Mem[EX/MEM.ALUOutput] ← EX/MEM.B;
+
+Branch instructions:
+    Idle 
+*/
+
+void mem() {
+    int fake_op_dis = 0;
+
+
+   if(fake_op_dis == 0) {//ALU OPCODE
+
+       /*
+        MEM/WB.IR ← EX/MEM.IR;
+        MEM/WB.ALUOutput ← EX/MEM.ALUOutput;
+       */
+
+        mem_ir_thru.IN().pullFrom(*exmem.ir);
+        mem_alu_out_thru.IN().pullFrom(*exmem.ir);
+        memwb.ir.latchFrom(mem_ir_thru.OUT());
+        memwb.alu_out.latchFrom(mem_alu_out_thru.OUT());
+        Clock::tick();
+   }
+
+   else if (fake_op_dis == 1) {
+        mem_ir_thru.IN().pullFrom(*exmem.ir);
+        memwb.ir.latchFrom(mem_ir_thru.OUT());
+        Clock::tick();       
+   }
+}
 
 void connect() {
     pc.connectsTo(addr_alu.OP2());
