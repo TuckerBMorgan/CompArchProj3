@@ -26,7 +26,7 @@ extern StorageObject const_valid_off;
 
 typedef struct ifidreg {
   Clearable *v;
-  StorageObject *ir;
+  StorageObject *ir; 
   StorageObject *pc;
   StorageObject *npc;
 }IfIdReg;

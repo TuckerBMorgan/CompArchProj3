@@ -19,7 +19,7 @@ StorageObject ifid_pc("IFID_PC", CPU_BITS);
 StorageObject ifid_npc("IFID_NPC", CPU_BITS);
 IfIdReg ifid = {
   &ifid_v, &ifid_ir, &ifid_pc, &ifid_npc
-};
+}; 
 
 // ID components
 StorageObject r0("r0", CPU_BITS);

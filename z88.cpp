@@ -101,6 +101,8 @@ void id_stage() {
 }
 
 void ex_stage() {
+
+
     long ir_type = 0;
     //ALU
     /*
@@ -111,6 +113,7 @@ void ex_stage() {
    if(ir_type == 0) {//FAKE ALU THIS NEEDS ACTUAL VALUE
         ex_ir_thru.IN().pullFrom(*idex.ir);
         Clock::tick();
+        exmem.ir->latchFrom(ex_ir_thru.OUT());//this wil get excuted when we perform the alu op
 
         ex_alu.OP1().pullFrom(*idex.a);
         int is_slt_or_not = (int)(*idex.ir)(5, 3);//two two instructions slt, and sltu, have different 5-> 3 bits, so lets check for them and set the alu_op to compare
@@ -132,9 +135,11 @@ void ex_stage() {
                     ex_alu.perform(BusALU::op_and);
                 break;
                 case 5:
+                    //OR
                     ex_alu.perform(BusALU::op_or);
                 break;
                 case 6:
+                    //XOR
                     ex_alu.perform(BusALU::op_xor);
                 break;
                 case 7:
@@ -145,7 +150,7 @@ void ex_stage() {
             }
         }
         else {
-
+            //JONATHAN!!!! find a way to do the compare for slt, and sltu
         }
 
         exmem.alu_out->latchFrom(ex_alu.OUT());
