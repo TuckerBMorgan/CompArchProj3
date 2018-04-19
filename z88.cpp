@@ -4,70 +4,47 @@
 #include "includes.h"
 #include "globals.h"
 
-/*
-void run_simulation(char* obj_file) {
-    mem.load(obj_file);
 
-    //tell the PC where to start
-    pc_alias->latchFrom(mem.READ());
-    Clock::tick();
-    int   count = 0;
-    cout << setfill('0');
-    while(!done) {
-        
-        cout << oct << setw(6) << pc_alias->value() << ":  ";
-        load_inscrution_into_register(*pc_alias, abus, mdr);
-        dbus.IN().pullFrom(mdr);
-        Clock::tick();
-        instruction_register.latchFrom(dbus.OUT());
-        Clock::tick();
+//NOP J JAL BEQ BNE ADDI SLTI ANDI ORI XORI LUI LW SW
 
-        cout << oct << setw(6) << instruction_register.value() << "  \n";
-
-        execute_instruction();
-        pc_alias->perform(Counter::incr2);
-        Clock::tick();
-
-        count ++;
-    }
-}
-*/
+//HALT JR JALR BREAK ADD SUB AND OR XOR SLT SLTU SLL SRL SRA SLLV SRLV SRAV
 
 
-void if_stage() {
-
-
-    //IF/ID.IR ← Mem[PC];
+//THIS TICKS THE CLOCK BE CAREFUL
+void read_in_next_instruction() {
     instr_abus.IN().pullFrom(pc);
     instr_mem.MAR().latchFrom(instr_abus.OUT());
     Clock::tick();
+}
+
+void if_stage_first_clock() {
+    //IF/ID.IR ← Mem[PC];
     instr_mem.read();
     ifid.ir->latchFrom(instr_mem.READ());
-    Clock::tick();
+
+}
+
+void if_stage_second_clock() {
+
 
     //all instructions have the opcode in the first 6 bits
     //we only need the top three to see what kinda of instruction it is
-    long upper_opcode = (*ifid.pc)(31, 29);    //the * is required so we can deferance and get to the opcode
+    long upper_opcode = (*ifid.ir)(31, 29);    //the * is required so we can deferance and get to the opcode
+
+    long rs = (*ifid.ir)(25, 21);//IF/ID.ir(rs)
+    long rt = (*ifid.ir)(20, 16);//IF/ID.ir(rt)
+
+    bool are_equal = reg_file[rs]->value() == reg_file[rt]->value();
+    long notEqual_or_equal = (*ifid.ir)(28, 26);
     
-
     //all branch instructions start with one of this two opcodes
-    if(upper_opcode == 5 || upper_opcode == 7) {//if ((IF/ID.opcode == branch)
-        long rs = (*ifid.ir)(25, 21);//IF/ID.ir(rs)
-
-        //there is so form of error with this rtl, ask prof
-        //nevermind, this is all about which register are we checking against
-        //what op we are preforming, this is the check for non simple branchs
-        if (reg_file[rs]->value() == 0) {//(reg[IF/ID.IR[rs] op 0))
-
-            
-            /*
-                IF/ID.NPC and PC ← (
-            
-                ( IF/ID.NPC + (sign-extend(IF/ID.IR[imm]) << 2) )
-            
-            */
-        }
-            
+    if(upper_opcode == 7 && ( (notEqual_or_equal == 4 && are_equal) || (notEqual_or_equal == 5 && !are_equal))) {//if ((IF/ID.opcode == branch)
+        /*
+        (( IF/ID.NPC + (sign-extend(IF/ID.IR[imm])))
+        */
+        addr_alu.OP1().pullFrom(*ifid.npc);
+    //     addr_alu.OP2().pullFrom();//this is the sign extended immediate value
+        addr_alu.perform(BusALU::op_add);
     } 
     else {
         //else
@@ -75,11 +52,12 @@ void if_stage() {
         addr_alu.OP1().pullFrom(pc);
         addr_alu.OP2().pullFrom(const_addr_inc);
         addr_alu.perform(BusALU::op_add);
-        //IF/ID.NPC and PC <- PC + 4
-        ifid.pc->latchFrom(addr_alu.OUT());
-        ifid.npc->latchFrom(addr_alu.OUT());
-        Clock::tick();
-    }
+    }  
+
+    //IF/ID.NPC and PC ←
+    ifid.npc->latchFrom(addr_alu.OUT());
+    ifid.pc->latchFrom(addr_alu.OUT());
+ 
 }
 
 void id_stage() {
@@ -99,8 +77,9 @@ void id_stage() {
     idex.v->latchFrom(id_v_thru.OUT());//IDEX.V <- IF/ID.V
     idex.a->latchFrom(op1_bus.OUT());//ID/EX.A ← reg[IF/ID.IR[rs]];
     idex.b->latchFrom(op2_bus.OUT());//ID/EX.B ← reg[IF/ID.IR[rt]];
+
+
     idex.imm->latchFrom(imm_bus.OUT());//ID/EX.Imm <- signextend(ID/ID.IR[imm]);
-    Clock::tick();
 }
 
 void ex_stage() {
@@ -173,6 +152,7 @@ void ex_stage() {
         b_thru.IN().pullFrom(*idex.b);
         exmem.b->latchFrom(b_thru.OUT());
         Clock::tick();
+        
 
         //EX/MEM.ALUOutput ← ID/EX.A + ID/EX.Imm;
         ex_alu.OP1().pullFrom(*idex.a);
@@ -193,12 +173,6 @@ void ex_stage() {
         EX/MEM.cond ← (ID/EX.A == 0);
         */
 
-        ex_alu.OP1().pullFrom(*idex.imm);
-        ex_alu.OP2().pullFrom(const_two);//we need something with the value 2
-        ex_alu.perform(BusALU::op_lshift);
-        idex.imm->latchFrom(ex_alu.OUT());//THIS MIGHT ALSO BE VERY WRONG
-        Clock::tick();
-
         ex_alu.OP1().pullFrom(*idex.npc);
         ex_alu.OP2().pullFrom(*idex.imm);//THIS MIGHT BE VERY WRONG
         ex_alu.perform(BusALU::op_add);
@@ -217,13 +191,6 @@ void ex_stage() {
 
 
         Clock::tick();
-
-
-
-
-        
-
-        Clock::tick();
    }
 }
 
@@ -240,7 +207,7 @@ void mem() {
         mem_alu_out_thru.IN().pullFrom(*exmem.ir);
         memwb.ir->latchFrom(mem_ir_thru.OUT());
         memwb.alu_out->latchFrom(mem_alu_out_thru.OUT());
-        Clock::tick();
+   //     Clock::tick();
     }
     else if (fake_op_dis == 1) {
         /*

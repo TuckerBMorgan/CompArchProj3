@@ -11,8 +11,9 @@ StorageObject const_valid_off("CONST_VALID_OFF", CPU_BITS, 0x00);
 StorageObject const_two("CONST_TWO", CPU_BITS, 0x02);
 StorageObject mdr("mdr", CPU_BITS);
 Bus valid_bus("VALID_BUS", V_BITS);
-
-// IF/ID components
+BusALU ir_immed_to_ifid_signexted_imm("IR_IMMED_TO_IFID_SIGNEXNTED_IMM", CPU_BITS / 2);
+StorageObject sixteen_bit_mask("SIXTEEN_BIT_MASK", 0x00008000);
+// IF/ID components 
 
 Clearable ifid_v("IFID_V", V_BITS);
 StorageObject ifid_ir("IFID_IR", CPU_BITS);
