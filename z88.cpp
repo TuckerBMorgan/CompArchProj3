@@ -5,12 +5,127 @@
 #include "globals.h"
 
 
-//NOP J JAL BEQ BNE SLTI  LUI LW SW
+//NOP J JAL LUI LW SW
 //HALT JR JALR BREAK SLT SLTU
 
 
 //done is ex stage ADDI, ANDI, ORI, XORI, ADD, SUB, AND, OR, XOR, SLL, SRL, SRA, SLLV, SRLV, SRAV
+//SLTI, BEQ, BNE
 
+enum OPCodeClass {
+    ALU,
+    BRANCH,
+    LOAD,
+    STORE,
+    NOP,
+    JUMP,
+    HALT,
+    BREAK
+};
+
+
+OPCodeClass from_full_instruction_return_opcode_class(StorageObject* ir) {
+    long higher_op = (*ir)(31, 26);
+    
+    long higher_higher_op = (*ir)(31, 29);
+    long lower_higher_op = (*ir)(28, 26);
+        
+    if(higher_op == 0) {//all special instrctions
+        
+        if(higher_higher_op == 0){
+            if(lower_higher_op == 0) {
+                return HALT;
+            }
+            else if(lower_higher_op == 2 || lower_higher_op == 3) {
+                return JUMP;
+            }
+            else if(lower_higher_op == 7) {
+                return BREAK;
+            }
+        }
+
+        //all other special instructions are ALU
+        return ALU;
+    }
+    else {
+
+        if(higher_higher_op == 0) {
+            if(lower_higher_op == 1) {
+                return NOP;
+            }
+            else if(lower_higher_op == 2 || lower_higher_op == 3) {
+                return JUMP;
+            }
+        }
+
+        if(higher_higher_op >= 2 && higher_higher_op < 4) {
+            return ALU;
+        }
+
+        if(higher_higher_op == 4) {
+            return LOAD;
+        }
+        if (higher_higher_op == 5) {
+            return STORE;
+        }
+        else {
+            return BRANCH;
+        }
+    }
+};
+/*
+char[6] from_full_instruction_return_opcode_nemonic(long opcode) {
+    
+    long higher_op = (*ir)(31, 26);
+    
+    long higher_higher_op = (*ir)(31, 29);
+    long lower_higher_op = (*ir)(28, 26);
+        
+    if(higher_op == 0) {//all special instrctions
+        
+        if(higher_higher_op == 0){
+            if(lower_higher_op == 0) {
+                return "HALT\n"
+            }
+            else if(lower_higher_op == 2 || lower_higher_op == 3) {
+                return JUMP;
+            }
+            else if(lower_higher_op == 7) {
+                return BREAK;
+            }
+        }
+
+        //all other special instructions are ALU
+
+        return ALU;
+    }
+    else {
+
+        if(higher_higher_op == 0) {
+            if(lower_higher_op == 1) {
+                return NOP;
+            }
+            else if(lower_higher_op == 2 || lower_higher_op == 3) {
+                return JUMP;
+            }
+        }
+
+        if(higher_higher_op >= 2 && higher_higher_op < 4) {
+            return ALU;
+        }
+
+        if(higher_higher_op == 4) {
+            return LOAD;
+        }
+        if (higher_higher_op == 5) {
+            return STORE;
+        }
+        else {
+            return BRANCH;
+        }
+    }
+}
+*/
 void if_stage_first_clock() {
     instr_abus.IN().pullFrom(pc);
     instr_mem.MAR().latchFrom(instr_abus.OUT());
@@ -132,7 +247,7 @@ void ex_stage_second_clock() {
                 ex_alu.perform(BusALU::op_rshift);
             }
             else if(op_mask == 7) {
-                ex_alu.perform(BusALU::rashift);
+                ex_alu.perform(BusALU::op_rashift);
             }
 
             return;
@@ -140,10 +255,16 @@ void ex_stage_second_clock() {
 
         if(ir_type == 17) {//THIS IS THE SLTI instruction
             //We compare rs(idex.a) with idex.imm, 
-            if( (*idex.imm)->value() == (*idex.a)->value() ) {
-                
+            if(  (*idex.a).value() < (*idex.imm).value() ) {
+                ex_alu.perform(BusALU::op_one);
             }
+            else {
+                ex_alu.perform(BusALU::op_zero);
+            }
+            exmem.alu_out->latchFrom(ex_alu.OUT());
+            return;
         }
+        
 
         ex_alu.OP1().pullFrom(*idex.a);
 
@@ -153,7 +274,7 @@ void ex_stage_second_clock() {
             ex_alu.OP2().pullFrom(*idex.b);
         }
         else {
-            ex_alu.OP2().pullFrom(*idex.im);
+            ex_alu.OP2().pullFrom(*idex.imm);
         }
 
         int is_slt_or_not = (int)(*idex.ir)(5, 3);//two instructions slt, and sltu, have different 5-> 3 bits, so lets check for them and set the alu_op to compare
@@ -188,11 +309,11 @@ void ex_stage_second_clock() {
         }
 
         exmem.alu_out->latchFrom(ex_alu.OUT());
+        return;
    }
 
 
-   if(ir_type == 1) {//FAKE FAKE FAKE FAKE LOAD STORE FLAG VALUE
-
+   if(ir_type >= 32 && ir_type < 48) {//32 -> 48 are all the load store operations we care about, we are preforming nothing from the special table
         //EX/MEM.IR ← ID/EX.IR;
         ex_ir_thru.IN().pullFrom(*idex.ir);
         exmem.ir->latchFrom(ex_ir_thru.OUT());
@@ -206,30 +327,31 @@ void ex_stage_second_clock() {
         ex_alu.OP2().pullFrom(*idex.imm);
         ex_alu.perform(BusALU::op_add);
         exmem.alu_out->latchFrom(ex_alu.OUT());
+        return;
    }
 
 
 
-   if(ir_type == 2) {//THIS IS FAKE SO FAKE THE FAKEST
-        //Branch
-        // EXS/MEM.ALUOutput ← ID/EX.NPC + ID/EX.Imm;
-        ex_alu.OP1().pullFrom(*idex.npc);
-        ex_alu.OP2().pullFrom(*idex.imm);//THIS MIGHT BE VERY WRONG
-        ex_alu.perform(BusALU::op_add);
-        exmem.alu_out->latchFrom(ex_alu.OUT());
-        //    EX/MEM.cond ← (ID/EX.A == 0);
-        if(idex.a->value() == 0) {
-            exmem.cond->set();
-        }
-        else {
-            exmem.cond->clear();
-        }
-   }
+    //Branch
+    // EXS/MEM.ALUOutput ← ID/EX.NPC + ID/EX.Imm;
+    ex_alu.OP1().pullFrom(*idex.npc);
+    ex_alu.OP2().pullFrom(*idex.imm);//THIS MIGHT BE VERY WRONG
+    ex_alu.perform(BusALU::op_add);
+    exmem.alu_out->latchFrom(ex_alu.OUT());
+    //    EX/MEM.cond ← (ID/EX.A == 0);
+    if(idex.a->value() == 0) {
+        exmem.cond->set();
+    }
+    else {
+        exmem.cond->clear();
+    }
+
 }
 
 void mem_stage_first_clock() {
-    int fake_op_dis = 0;
-    if(fake_op_dis == 0) {//ALU OPCODE
+    int fake_op_dis = (*exmem.ir)(32, 26);
+
+    if(fake_op_dis == 0 ) {//ALU OPCODE
 
         /*
         MEM/WB.IR ← EX/MEM.IR;
@@ -240,7 +362,6 @@ void mem_stage_first_clock() {
         mem_alu_out_thru.IN().pullFrom(*exmem.ir);
         memwb.ir->latchFrom(mem_ir_thru.OUT());
         memwb.alu_out->latchFrom(mem_alu_out_thru.OUT());
-   //     Clock::tick();
     }
     else if (fake_op_dis == 1) {
         /*
@@ -253,10 +374,9 @@ void mem_stage_first_clock() {
         data_mem.MAR().latchFrom(mem_abus.OUT());
 
         if(1) {//if Load
-            //MEM/WB.LMD ← Mem[EX/MEM.ALUOutput]
-            data_mem.read();
-            memwb.lmd->latchFrom(data_mem.READ());
-            Clock::tick();
+
+
+            
         }
         else if(2) {
 
@@ -274,25 +394,11 @@ void mem_stage_first_clock() {
 }
 
 void mem_stage_second_clock() {
-    int fake_op_dis = 0;
 
-
-    if(fake_op_dis == 0) {
-
-    }
-    else if(fake_op_dis == 1) {
-
-        if(1) {//load 
-
-        }
-        else {//store
-
-        }
-
-    }
-    else if(fake_op_dis == 2) {
-
-    }
+    //load second stage
+   //MEM/WB.LMD ← Mem[EX/MEM.ALUOutput]
+            data_mem.read();
+            memwb.lmd->latchFrom(data_mem.READ());
 }
 
 
@@ -321,6 +427,8 @@ Branch instructions:
          reg[MEM/WB.IR[rt]] ← MEM/WB.ALUOutput;
         */
 //       wb_bus.pullFrom(reg_file[(*memwb.ir)()]);
+
+
 
    }
    else if (fake_op_dis == 1) {
