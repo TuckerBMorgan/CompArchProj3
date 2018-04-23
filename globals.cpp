@@ -8,11 +8,9 @@ Bus instr_abus("INSTR_ABUS", CPU_BITS);
 StorageObject const_addr_inc("CONST_ADDR_INCR", CPU_BITS, 0x04);
 StorageObject const_valid_on("CONST_VALID_ON", CPU_BITS, 0x01);
 StorageObject const_valid_off("CONST_VALID_OFF", CPU_BITS, 0x00);
-StorageObject const_two("CONST_TWO", CPU_BITS, 0x02);
 StorageObject mdr("mdr", CPU_BITS);
 Bus valid_bus("VALID_BUS", V_BITS);
 BusALU ir_immed_to_ifid_signexted_imm("IR_IMMED_TO_IFID_SIGNEXNTED_IMM", CPU_BITS / 2);
-StorageObject sixteen_bit_mask("SIXTEEN_BIT_MASK", 0x00008000);
 // IF/ID components 
 
 Clearable ifid_v("IFID_V", V_BITS);
@@ -136,7 +134,7 @@ Bus ex_v_thru("EX_V_THRU", CPU_BITS);
 // EX/MEM components
 
 Clearable exmem_v("EXMEM_V", V_BITS);
-StorageObject exmem_cond("EXMEM_COND", CPU_BITS);
+Clearable exmem_cond("EXMEM_COND", CPU_BITS);
 StorageObject exmem_ir("EXMEM_IR", CPU_BITS);
 StorageObject exmem_pc("EXMEM_PC", CPU_BITS);
 StorageObject exmem_npc("EXMEM_NPC", CPU_BITS);

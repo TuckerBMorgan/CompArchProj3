@@ -6,26 +6,14 @@
 
 
 //NOP J JAL BEQ BNE ADDI SLTI ANDI ORI XORI LUI LW SW
-
 //HALT JR JALR BREAK ADD SUB AND OR XOR SLT SLTU SLL SRL SRA SLLV SRLV SRAV
 
-
-//THIS TICKS THE CLOCK BE CAREFUL
-void read_in_next_instruction() {
+void if_stage_first_clock() {
     instr_abus.IN().pullFrom(pc);
     instr_mem.MAR().latchFrom(instr_abus.OUT());
-    Clock::tick();
-}
-
-void if_stage_first_clock() {
-    //IF/ID.IR ← Mem[PC];
-    instr_mem.read();
-    ifid.ir->latchFrom(instr_mem.READ());
-
 }
 
 void if_stage_second_clock() {
-
 
     //all instructions have the opcode in the first 6 bits
     //we only need the top three to see what kinda of instruction it is
@@ -43,24 +31,38 @@ void if_stage_second_clock() {
         (( IF/ID.NPC + (sign-extend(IF/ID.IR[imm])))
         */
         addr_alu.OP1().pullFrom(*ifid.npc);
-    //     addr_alu.OP2().pullFrom();//this is the sign extended immediate value
-        addr_alu.perform(BusALU::op_add);
+        addr_alu.OP2().pullFrom(*idex.imm);
     } 
     else {
         //else
         //(PC + 4)
         addr_alu.OP1().pullFrom(pc);
-        addr_alu.OP2().pullFrom(const_addr_inc);
-        addr_alu.perform(BusALU::op_add);
-    }  
+        addr_alu.OP2().pullFrom(*idex.imm);
+    }
 
     //IF/ID.NPC and PC ←
+
+    addr_alu.perform(BusALU::op_add);
     ifid.npc->latchFrom(addr_alu.OUT());
-    ifid.pc->latchFrom(addr_alu.OUT());
+    pc.latchFrom(addr_alu.OUT());
+
+    //IF/ID.IR ← Mem[PC];
+    instr_mem.read();
+    ifid.ir->latchFrom(instr_mem.READ());
  
 }
 
-void id_stage() {
+void id_stage_first_clock() {
+    //this function was intentionally left blank
+	sign_extend_alu.OP1().pullFrom(*ifid.ir);
+	sign_extend_alu.OP2().pullFrom(const_sign_extend_mask);
+	sign_extend_alu.perform(BusALU::op_extendSign);
+	idex.imm->latchFrom(sign_extend_alu.OUT());
+}
+
+
+void id_stage_second_clock() {
+
     StorageObject* a = reg_file[(*ifid.ir)(25, 21)];
     StorageObject* b = reg_file[(*ifid.ir)(20, 16)];
 
@@ -77,12 +79,13 @@ void id_stage() {
     idex.v->latchFrom(id_v_thru.OUT());//IDEX.V <- IF/ID.V
     idex.a->latchFrom(op1_bus.OUT());//ID/EX.A ← reg[IF/ID.IR[rs]];
     idex.b->latchFrom(op2_bus.OUT());//ID/EX.B ← reg[IF/ID.IR[rt]];
-
-
-    idex.imm->latchFrom(imm_bus.OUT());//ID/EX.Imm <- signextend(ID/ID.IR[imm]);
 }
 
-void ex_stage() {
+void ex_stage_first_clock() {
+    ex_alu.perform(BusALU::op_not);
+}
+
+void ex_stage_second_clock() {
 
 
     long ir_type = 0;
@@ -126,6 +129,8 @@ void ex_stage() {
                     ex_alu.perform(BusALU::op_xor);
                 break;
                 case 7:
+
+
                 //JONATHAN!!!! a good place for you to start
                 //nor isnt a op that BusALU can do, so need to find solution to this
 //                    ex_alu.perform(BusALU::op_nor);
@@ -133,12 +138,10 @@ void ex_stage() {
             }
         }
         else {
-            //JONATHAN!!!! find a way to do the compare for slt, and sltu
-            //so we can do the slt, sltu instructions
+            
         }
 
         exmem.alu_out->latchFrom(ex_alu.OUT());
-        Clock::tick();
    }
 
 
@@ -151,50 +154,34 @@ void ex_stage() {
         //EX/MEM.B ← ID/EX.B;
         b_thru.IN().pullFrom(*idex.b);
         exmem.b->latchFrom(b_thru.OUT());
-        Clock::tick();
-        
 
         //EX/MEM.ALUOutput ← ID/EX.A + ID/EX.Imm;
         ex_alu.OP1().pullFrom(*idex.a);
         ex_alu.OP2().pullFrom(*idex.imm);
         ex_alu.perform(BusALU::op_add);
         exmem.alu_out->latchFrom(ex_alu.OUT());
-        Clock::tick();
    }
 
 
 
    if(ir_type == 2) {//THIS IS FAKE SO FAKE THE FAKEST
-
-       //Branch
-        
-        /*
-        EXS/MEM.ALUOutput ← ID/EX.NPC + (ID/EX.Imm << 2);
-        EX/MEM.cond ← (ID/EX.A == 0);
-        */
-
+        //Branch
+        // EXS/MEM.ALUOutput ← ID/EX.NPC + ID/EX.Imm;
         ex_alu.OP1().pullFrom(*idex.npc);
         ex_alu.OP2().pullFrom(*idex.imm);//THIS MIGHT BE VERY WRONG
         ex_alu.perform(BusALU::op_add);
         exmem.alu_out->latchFrom(ex_alu.OUT());
-        
-        //    EX/MEM.cond ← (ID/EX.A == 0);?????hmmmm
-        /*
-        if(idex.a->value() != 0) {
-            op1_bus.IN().pullFrom(reg_file[0]);
-            exmem.cond.latchFrom(op1.OUT());
+        //    EX/MEM.cond ← (ID/EX.A == 0);
+        if(idex.a->value() == 0) {
+            exmem.cond->set();
         }
         else {
-
+            exmem.cond->clear();
         }
-        */
-
-
-        Clock::tick();
    }
 }
 
-void mem() {
+void mem_stage_first_clock() {
     int fake_op_dis = 0;
     if(fake_op_dis == 0) {//ALU OPCODE
 
@@ -216,14 +203,10 @@ void mem() {
         */
         mem_ir_thru.IN().pullFrom(*exmem.ir);
         memwb.ir->latchFrom(mem_ir_thru.OUT());
+        mem_abus.IN().pullFrom(*exmem.alu_out);
+        data_mem.MAR().latchFrom(mem_abus.OUT());
 
         if(1) {//if Load
-
-            //Mem[EX/MEM.ALUOutput]
-            mem_abus.IN().pullFrom(*exmem.alu_out);
-            data_mem.MAR().latchFrom(mem_abus.OUT());
-            Clock::tick();
-            
             //MEM/WB.LMD ← Mem[EX/MEM.ALUOutput]
             data_mem.read();
             memwb.lmd->latchFrom(data_mem.READ());
@@ -241,6 +224,28 @@ void mem() {
             Idle 
         //this page left intentionally left blank
         */
+    }
+}
+
+void mem_stage_second_clock() {
+    int fake_op_dis = 0;
+
+
+    if(fake_op_dis == 0) {
+
+    }
+    else if(fake_op_dis == 1) {
+
+        if(1) {//load 
+
+        }
+        else {//store
+
+        }
+
+    }
+    else if(fake_op_dis == 2) {
+
     }
 }
 
@@ -264,6 +269,15 @@ Branch instructions:
    int fake_op_dis = 0;
 
    if (fake_op_dis == 0) {
+        /*
+         reg[MEM/WB.IR[rd]] ← MEM/WB.ALUOutput;
+          or
+         reg[MEM/WB.IR[rt]] ← MEM/WB.ALUOutput;
+        */
+//       wb_bus.pullFrom(reg_file[(*memwb.ir)()]);
+
+   }
+   else if (fake_op_dis == 1) {
 
    }
 }

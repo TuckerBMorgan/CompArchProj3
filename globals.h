@@ -19,7 +19,6 @@ extern Bus instr_abus;
 extern Bus mux_to_pc;
 extern Bus mux_to_ifid;
 extern BusALU ir_immed_to_ifid_signexted_imm;
-extern StorageObject sixteen_bit_mask;
 extern StorageObject const_addr_inc;
 extern StorageObject const_valid_on;
 extern StorageObject const_valid_off;
@@ -79,7 +78,7 @@ extern Bus ex_v_thru;
 
 typedef struct exmemreg {
   Clearable *v;
-  StorageObject *cond;
+  Clearable *cond;
   StorageObject *ir;
   StorageObject *pc;
   StorageObject *npc;
