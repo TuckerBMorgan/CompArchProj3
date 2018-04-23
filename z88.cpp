@@ -5,8 +5,11 @@
 #include "globals.h"
 
 
-//NOP J JAL BEQ BNE ADDI SLTI ANDI ORI XORI LUI LW SW
-//HALT JR JALR BREAK ADD SUB AND OR XOR SLT SLTU SLL SRL SRA SLLV SRLV SRAV
+//NOP J JAL BEQ BNE SLTI  LUI LW SW
+//HALT JR JALR BREAK SLT SLTU
+
+
+//done is ex stage ADDI, ANDI, ORI, XORI, ADD, SUB, AND, OR, XOR, SLL, SRL, SRA, SLLV, SRLV, SRAV
 
 void if_stage_first_clock() {
     instr_abus.IN().pullFrom(pc);
@@ -63,8 +66,8 @@ void id_stage_first_clock() {
 
 void id_stage_second_clock() {
 
-    StorageObject* a = reg_file[(*ifid.ir)(25, 21)];
-    StorageObject* b = reg_file[(*ifid.ir)(20, 16)];
+    StorageObject* a = reg_file[(*ifid.ir)(25, 21)];//Rs
+    StorageObject* b = reg_file[(*ifid.ir)(20, 16)];//Rt
 
     op1_bus.IN().pullFrom(*a);
     op2_bus.IN().pullFrom(*b);
@@ -82,63 +85,106 @@ void id_stage_second_clock() {
 }
 
 void ex_stage_first_clock() {
-    ex_alu.perform(BusALU::op_not);
+
+    //only ALU and Load/Store opreations require we do this, but at the same time there is nore doing this for the branch insturctions as it doe not use the IR register
+    ex_ir_thru.IN().pullFrom(*idex.ir);
+    exmem.ir->latchFrom(ex_ir_thru.OUT());//this wil get excuted when we perform the alu op
+
+    long is_special = (*idex.ir)(31, 26);
+    long is_nor = (*idex.ir)(5, 0);
+
+    if(is_special == 0 && is_nor == 23) {//if this is a nor operation, lets not it and then drop it back into idex.a, 23 is the func code for nor
+        ex_alu.OP1().pullFrom(*idex.a);
+        ex_alu.perform(BusALU::op_not);
+        idex.a->latchFrom(ex_alu.OUT());
+    }
 }
 
 void ex_stage_second_clock() {
 
 
-    long ir_type = 0;
-   if(ir_type == 0) {//FAKE ALU THIS NEEDS ACTUAL VALUE
+    long ir_type = (*idex.ir)(31, 26);
+    long func_value = (*idex.ir)(5, 0);
 
-     //ALU
-    /*
-        EX/MEM.IR ← ID/EX.IR;
-        if R-R EX/MEM.ALUOutput ← ID/EX.A func ID/EX.B;
-        else   EX/MEM.ALUOutput ← ID/EX.A func ID/EX.Imm;
-    */
-  
-        ex_ir_thru.IN().pullFrom(*idex.ir);
-        exmem.ir->latchFrom(ex_ir_thru.OUT());//this wil get excuted when we perform the alu op
+    //FIRST WE CHECK FOR THE SPECIAL ALU OPS
+    if( (ir_type  == 0 && func_value >= 16) || (ir_type >= 16 && ir_type < 32)) {//FAKE ALU THIS NEEDS ACTUAL VALUE  
+        long is_shifts = (*idex.ir)(5, 0);
+        
+        if(ir_type == 0 && is_shifts >= 37){//ALLL SHIFT OPERATIONS
 
-        ex_alu.OP1().pullFrom(*idex.a);
-        int is_slt_or_not = (int)(*idex.ir)(5, 3);//two two instructions slt, and sltu, have different 5-> 3 bits, so lets check for them and set the alu_op to compare
-        int func = (int)(*idex.ir)(2, 0);//this is the operation we are performing with ex_alu
-        if(is_slt_or_not) {
-            switch (func) {
-                case 0:
-                case 1:
-                    //ADD, and ADDU
-                    ex_alu.perform(BusALU::op_add);
-                break;
-                case 2:
-                case 3:
-                    //SUB, and SUBU
-                    ex_alu.perform(BusALU::op_add);
-                break;
-                case 4:
-                    //AND
-                    ex_alu.perform(BusALU::op_and);
-                break;
-                case 5:
-                    //OR
-                    ex_alu.perform(BusALU::op_or);
-                break;
-                case 6:
-                    //XOR
-                    ex_alu.perform(BusALU::op_xor);
-                break;
-                case 7:
+            long op_mask = (*idex.ir)(2, 0);
+            long second_operand = (*idex.ir)(5, 3);
+            ex_alu.OP1().pullFrom(*idex.a);
 
 
-                //JONATHAN!!!! a good place for you to start
-                //nor isnt a op that BusALU can do, so need to find solution to this
-//                    ex_alu.perform(BusALU::op_nor);
-                break;
+            if(second_operand == 4) {
+                //this must be sh
+            }
+            else if(second_operand == 4) {
+                //this must be the lower 5 bits of rs
+            }
+            
+
+            if(op_mask == 5) {
+                ex_alu.perform(BusALU::op_lshift);
+            }
+            else if(op_mask == 6) {
+                ex_alu.perform(BusALU::op_rshift);
+            }
+            else if(op_mask == 7) {
+                ex_alu.perform(BusALU::rashift);
+            }
+
+            return;
+        }
+
+        if(ir_type == 17) {//THIS IS THE SLTI instruction
+            //We compare rs(idex.a) with idex.imm, 
+            if( (*idex.imm)->value() == (*idex.a)->value() ) {
+                
             }
         }
+
+        ex_alu.OP1().pullFrom(*idex.a);
+
+        long is_special = (*idex.ir)(31, 26);
+
+        if(is_special == 0) {//in this case is_special points out that we are preforming a R-R alu op
+            ex_alu.OP2().pullFrom(*idex.b);
+        }
         else {
-            
+            ex_alu.OP2().pullFrom(*idex.im);
+        }
+
+        int is_slt_or_not = (int)(*idex.ir)(5, 3);//two instructions slt, and sltu, have different 5-> 3 bits, so lets check for them and set the alu_op to compare
+        int func = (int)(*idex.ir)(2, 0);//this is the operation we are performing with ex_alu
+
+        switch (func) {
+            case 0:
+            case 1:
+                //ADD, and ADDI
+                ex_alu.perform(BusALU::op_add);
+            break;
+            case 2:
+            case 3:
+                //SUB, and SUBI
+                ex_alu.perform(BusALU::op_add);
+            break;
+            case 4:
+                //AND
+                ex_alu.perform(BusALU::op_and);
+            break;
+            case 5:
+                //OR
+                ex_alu.perform(BusALU::op_or);
+            break;
+            case 6:
+                //XOR
+                ex_alu.perform(BusALU::op_xor);
+            break;
+            case 7:
+                ex_alu.perform(BusALU::op_or);
+            break;
         }
 
         exmem.alu_out->latchFrom(ex_alu.OUT());
