@@ -349,10 +349,11 @@ void ex_stage_second_clock() {
 }
 
 void mem_stage_first_clock() {
+
+    OPCodeClass opc = from_full_instruction_return_opcode_class(exmem.ir);
     int fake_op_dis = (*exmem.ir)(32, 26);
 
-    if(fake_op_dis == 0 ) {//ALU OPCODE
-
+    if(opc == ALU) {
         /*
         MEM/WB.IR ← EX/MEM.IR;
         MEM/WB.ALUOutput ← EX/MEM.ALUOutput;
@@ -363,77 +364,65 @@ void mem_stage_first_clock() {
         memwb.ir->latchFrom(mem_ir_thru.OUT());
         memwb.alu_out->latchFrom(mem_alu_out_thru.OUT());
     }
-    else if (fake_op_dis == 1) {
-        /*
+
+    if(opc == LOAD || opc == STORE) {
+    /*
         Load/store instructions:
         MEM/WB.IR ← EX/MEM.IR;
-        */
+    */
         mem_ir_thru.IN().pullFrom(*exmem.ir);
         memwb.ir->latchFrom(mem_ir_thru.OUT());
+
         mem_abus.IN().pullFrom(*exmem.alu_out);
         data_mem.MAR().latchFrom(mem_abus.OUT());
 
-        if(1) {//if Load
-
-
-            
+        if(opc == STORE) {
+            data_mem.WRITE().pullFrom(*exmem.b);
         }
-        else if(2) {
-
-        }
-
-
-    }
-    else if (fake_op_dis == 3) {
-        /*
-        Branch instructions:
-            Idle 
-        //this page left intentionally left blank
-        */
     }
 }
 
 void mem_stage_second_clock() {
+    OPCodeClass opc = from_full_instruction_return_opcode_class(exmem.ir);
 
-    //load second stage
-   //MEM/WB.LMD ← Mem[EX/MEM.ALUOutput]
-            data_mem.read();
-            memwb.lmd->latchFrom(data_mem.READ());
+    if(opc == LOAD) {
+        data_mem.read();
+        memwb.lmd->latchFrom(data_mem.READ());
+    }
+    else if(opc == STORE) {
+        data_mem.write();
+    }
 }
 
 
 void wb() {
-    /*
-ALU instructions:
+   
+   OPCodeClass opc = from_full_instruction_return_opcode_class(memwb.ir);
 
-    reg[MEM/WB.IR[rd]] ← MEM/WB.ALUOutput;
-      or
-    reg[MEM/WB.IR[rt]] ← MEM/WB.ALUOutput;
+   if(opc == ALU) {
+       long is_special = (*memwb.ir)(31, 26);
+       StorageObject* use_register;
 
-Load/store instructions:
+       if(is_special == 0) {//all special alu opcode write into reg[Mem/WB.ir[rd]]
+            size_t rd_index = (*memwb.ir)(15, 11);
+            use_register = reg_file[rd_index];
+       }
+       else {//they write into reg[Mem/WB.ir[rt]]
+            size_t rt_index = (*memwb.ir)(20, 16);
+            use_register = reg_file[rt_index];
+       }
 
-    if Load reg[MEM/WB.IR[rt]] ← MEM/WB.LMD;
-
-Branch instructions:
-    Idle 
-    */
-
-   int fake_op_dis = 0;
-
-   if (fake_op_dis == 0) {
-        /*
-         reg[MEM/WB.IR[rd]] ← MEM/WB.ALUOutput;
-          or
-         reg[MEM/WB.IR[rt]] ← MEM/WB.ALUOutput;
-        */
-//       wb_bus.pullFrom(reg_file[(*memwb.ir)()]);
-
-
-
+       wb_bus.IN().pullFrom(*memwb.alu_out);
+       use_register->latchFrom(wb_bus.OUT());
    }
-   else if (fake_op_dis == 1) {
 
-   }
+    if(opc == LOAD) { 
+        size_t rt_index = (*memwb.ir)(20, 16);
+        wb_bus.IN().pullFrom(*memwb.lmd);
+        reg_file[rt_index]->latchFrom(wb_bus.OUT());
+    }
+
+
 }
 
 void connect() {
