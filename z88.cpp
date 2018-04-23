@@ -73,59 +73,47 @@ OPCodeClass from_full_instruction_return_opcode_class(StorageObject* ir) {
         }
     }
 };
-/*
-char[6] from_full_instruction_return_opcode_nemonic(long opcode) {
-    
-    long higher_op = (*ir)(31, 26);
-    
-    long higher_higher_op = (*ir)(31, 29);
-    long lower_higher_op = (*ir)(28, 26);
-        
-    if(higher_op == 0) {//all special instrctions
-        
-        if(higher_higher_op == 0){
-            if(lower_higher_op == 0) {
-                return "HALT\n"
-            }
-            else if(lower_higher_op == 2 || lower_higher_op == 3) {
-                return JUMP;
-            }
-            else if(lower_higher_op == 7) {
-                return BREAK;
-            }
-        }
 
-        //all other special instructions are ALU
 
-        return ALU;
+const char* opcode_list_1[][8] = {
+    {"-", "NOP", "J", "JAL", "-", "-", "-","-"},
+    {"-", "-", "-", "-", "-", "-", "-","-"},
+    {"ADDI", "ADDIU", "-", "-", "ANDI", "ORI", "XORI","-"},
+    {"SLTI", "SLTIU", "-", "-", "-", "-", "-","-"},
+    {"LB", "LH", "-", "LW", "LBU", "LHU", "-","LUI"},
+    {"SB", "SH", "-", "SW", "-", "-", "-","-"},
+    {"-", "-", "BLTZ", "BLTZAL", "-", "-", "-","-"},
+    {"-", "-", "BGEZ", "BGEZAL", "BEQ", "BNE","BLEZ", "BGTZ"},
+};
+
+const char* opcode_list_2[][8] = {
+    {"HALT", "-", "JR", "JALR", "-", "-", "SYSCALL","BREAK"},
+    {"-", "-", "-", "-", "-", "-", "-","-"},
+    {"ADD", "ADDU", "SUB", "SUBU", "AND", "OR", "XOR","NOR"},
+    {"SLT", "SLTI", "-", "-", "-", "-", "-","-"},
+    {"SLT", "SLTU", "-", "-", "-", "-", "-","-"},
+    {"-", "-", "-", "-", "-", "SLL", "SRL","SRA"},
+    {"-", "-", "-", "-", "-", "SLLV", "SRLV","SRAV"},
+    {"-", "-", "-", "-", "-", "-","-", "-"},
+};
+
+
+const char* get_opcode_string_from_ir(StorageObject* ir) {
+    long opcode = (*ir)(31, 26);
+    if(opcode == 0) {
+        long upper = (*ir)(5, 3);
+        long down = (*ir)(2, 0);
+        return opcode_list_2[upper][down];
     }
     else {
+        long upper = (*ir)(31, 29);
+        long down = (*ir)(28, 26);
 
-        if(higher_higher_op == 0) {
-            if(lower_higher_op == 1) {
-                return NOP;
-            }
-            else if(lower_higher_op == 2 || lower_higher_op == 3) {
-                return JUMP;
-            }
-        }
-
-        if(higher_higher_op >= 2 && higher_higher_op < 4) {
-            return ALU;
-        }
-
-        if(higher_higher_op == 4) {
-            return LOAD;
-        }
-        if (higher_higher_op == 5) {
-            return STORE;
-        }
-        else {
-            return BRANCH;
-        }
+        return opcode_list_1[upper][down];
     }
+
 }
-*/
+
 void if_stage_first_clock() {
     instr_abus.IN().pullFrom(pc);
     instr_mem.MAR().latchFrom(instr_abus.OUT());
@@ -395,7 +383,7 @@ void mem_stage_second_clock() {
 }
 
 
-void wb() {
+void wb_stage_first_clock() {
    
    OPCodeClass opc = from_full_instruction_return_opcode_class(memwb.ir);
 
@@ -421,7 +409,9 @@ void wb() {
         wb_bus.IN().pullFrom(*memwb.lmd);
         reg_file[rt_index]->latchFrom(wb_bus.OUT());
     }
+}
 
+void wb_stage_second_clock() {
 
 }
 
