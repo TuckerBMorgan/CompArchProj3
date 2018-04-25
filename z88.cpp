@@ -427,7 +427,7 @@ void mem_stage_first_clock() {
         MEM/WB.IR ← EX/MEM.IR;
     */
 
-        mem_abus.IN().pullFrom(*exmem.alu_out);
+        mem_abus.IN().pullFrom(*exmem.imm);
         data_mem.MAR().latchFrom(mem_abus.OUT());
         data_mem.WRITE().pullFrom(*exmem.b);
     }
@@ -522,16 +522,17 @@ void wb_stage_second_clock() {
     }
     cout << '\n';
     if(ir_val == 0 && other_ir == 0) done = true;
-    if(ir_val == 7) {
+    if(ir_val == 0 && other_ir == 7) {
         cout << "   ";
         int count = 0;
         for(int i = 0; i < 31; ++i) {
             if((reg_file[i])->value() != 0) {
                 cout << "  " << *(reg_file[i]);
                 ++count;
-                if(count%4) cout << '\n';
+                if(!count%4) cout << '\n' << "   ";
             }
         }
+        cout << '\n';
     }
 }
 
@@ -614,6 +615,7 @@ void connect() {
     exmem.npc->connectsTo(mem_npc_thru.IN());
     exmem.b->connectsTo(b_thru.OUT());
     exmem.b->connectsTo(mem_abus.IN());
+    exmem.b->connectsTo(data_mem.WRITE());
     exmem.alu_out->connectsTo(ex_alu.OUT());
     exmem.alu_out->connectsTo(mem_alu_out_thru.IN());
     exmem.alu_out->connectsTo(mem_abus.IN());
