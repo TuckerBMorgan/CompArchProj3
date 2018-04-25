@@ -94,11 +94,11 @@ const char* opcode_list_2[][8] = {
     {"HALT   ", "-", "JR     ", "JALR   ", "-", "-", "SYSCALL","BREAK  "},
     {"-", "-", "-", "-", "-", "-", "-","-"},
     {"ADD    ", "ADDU   ", "SUB    ", "SUBU   ", "AND    ", "OR     ", "XOR    ","NOR    "},
-    {"SLT    ", "SLTI   ", "-", "-", "-", "-", "-","-"},
     {"SLT    ", "SLTU   ", "-", "-", "-", "-", "-","-"},
     {"-", "-", "-", "-", "-", "SLL    ", "SRL    ","SRA    "},
     {"-", "-", "-", "-", "-", "SLLV   ", "SRLV   ","SRAV   "},
     {"-", "-", "-", "-", "-", "-","-", "-"},
+    {"-", "-", "-", "-", "-", "-","-", "-"}
 };
 
 
@@ -238,29 +238,28 @@ void ex_stage_second_clock() {
     //FIRST WE CHECK FOR THE SPECIAL ALU OPS
     if( (ir_type  == 0 && func_value >= 16) || (ir_type >= 16 && ir_type < 32) || ir_type == 39) {//FAKE ALU THIS NEEDS ACTUAL VALUE
         long is_shifts = (*idex.ir)(5, 0);
-        long five_three = (*idex.ir)(2, 0);
-        long two_o = (*idex.ir)(5, 3);
+        long two_o = (*idex.ir)(2, 0);
+        long five_three = (*idex.ir)(5, 3);
 
         if(ir_type == 0 && is_shifts >= 37){//ALLL SHIFT OPERATIONS
 
             ex_alu.OP1().pullFrom(*idex.b);
 
-
-            if(two_o == 4) {
+            if(five_three == 4) {
                 long shft = (*idex.ir)(10, 6);
                 ex_alu.OP2().pullFrom(*(shifty_boys[shft]));
             }
-            else if(two_o == 5) {
+            else if(five_three == 5) {
                 ex_alu.OP2().pullFrom(shift_amt);
             }
 
-            if(five_three == 5) {
+            if(two_o == 5) {
                 ex_alu.perform(BusALU::op_lshift);
             }
-            else if(five_three == 6) {
+            else if(two_o == 6) {
                 ex_alu.perform(BusALU::op_rshift);
             }
-            else if(five_three == 7) {
+            else if(two_o == 7) {
                 ex_alu.perform(BusALU::op_rashift);
             }
 
