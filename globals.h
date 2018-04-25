@@ -16,6 +16,7 @@ extern StorageObject pc;
 extern StorageObject pc_mux;
 extern Memory instr_mem;
 extern Bus instr_abus;
+extern Bus if_pc_thru;
 extern Bus mux_to_pc;
 extern Bus mux_to_ifid;
 extern BusALU ir_immed_to_ifid_signexted_imm;
@@ -68,8 +69,12 @@ extern IdExReg idex;
 // EX components
 
 extern BusALU ex_alu;
+extern StorageObject shift_amt;
+extern StorageObject *shifty_boys[32];
+extern Bus rs_lower5;
 extern Bus b_thru;
 extern Bus ex_ir_thru;
+extern Bus ex_imm_thru;
 extern Bus ex_pc_thru;
 extern Bus ex_npc_thru;
 extern Bus ex_v_thru;
@@ -121,4 +126,6 @@ extern MemWbReg memwb;
 // WB components
 
 extern Bus wb_bus;
+
+extern bool done;
 #endif

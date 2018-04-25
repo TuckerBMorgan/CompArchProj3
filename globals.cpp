@@ -10,6 +10,7 @@ StorageObject const_valid_on("CONST_VALID_ON", CPU_BITS, 0x01);
 StorageObject const_valid_off("CONST_VALID_OFF", CPU_BITS, 0x00);
 StorageObject mdr("mdr", CPU_BITS);
 Bus valid_bus("VALID_BUS", V_BITS);
+Bus if_pc_thru("IF_PC_THRU", CPU_BITS);
 BusALU ir_immed_to_ifid_signexted_imm("IR_IMMED_TO_IFID_SIGNEXNTED_IMM", CPU_BITS / 2);
 // IF/ID components 
 
@@ -99,9 +100,9 @@ StorageObject *reg_file[32] = {
 
 BusALU branch_alu("BRANCH_ALU", CPU_BITS);
 BusALU sign_extend_alu("SE_ALU", CPU_BITS);
-StorageObject const_sign_extend_mask("SIGN_EXTEND", CPU_BITS, 0x10000);
+StorageObject const_sign_extend_mask("SIGN_EXTEND", CPU_BITS, 0x8000);
 StorageObject sign_extend_imm("SIGN_EXTEND_IMM", CPU_BITS);
-Bus imm_bus("IMM_BUS1", CPU_BITS);
+Bus imm_bus("IMM_BUS", CPU_BITS);
 Bus op1_bus("OP_BUS1", CPU_BITS);
 Bus op2_bus("OP_BUS2", CPU_BITS);
 Bus id_ir_thru("ID_IR_THRU", CPU_BITS);
@@ -125,16 +126,90 @@ IdExReg idex = {
 // EX components
 
 BusALU ex_alu("EX_ALU", CPU_BITS);
+StorageObject shift_amt("SHIFT_AMT", CPU_BITS);
+Bus rs_lower5("RS_LOWER5", 5);
 Bus b_thru("B_THRU", CPU_BITS);
 Bus ex_ir_thru("EX_IR_THRU", CPU_BITS);
+Bus ex_imm_thru("EX_IMM_THRU", CPU_BITS);
 Bus ex_pc_thru("EX_PC_THRU", CPU_BITS);
 Bus ex_npc_thru("EX_NPC_THRU", CPU_BITS);
 Bus ex_v_thru("EX_V_THRU", CPU_BITS);
 
+StorageObject s0("s0", CPU_BITS, 0);
+StorageObject s1("s1", CPU_BITS, 1);
+StorageObject s2("s2", CPU_BITS, 2);
+StorageObject s3("s3", CPU_BITS, 3);
+StorageObject s4("s4", CPU_BITS, 4);
+StorageObject s5("s5", CPU_BITS, 5);
+StorageObject s6("s6", CPU_BITS, 6);
+StorageObject s7("s7", CPU_BITS, 7);
+StorageObject s8("s8", CPU_BITS, 8);
+StorageObject s9("s9", CPU_BITS, 9);
+
+StorageObject s10("r10", CPU_BITS, 10);
+StorageObject s11("s11", CPU_BITS, 11);
+StorageObject s12("s12", CPU_BITS, 12);
+StorageObject s13("s13", CPU_BITS, 13);
+StorageObject s14("s14", CPU_BITS, 14);
+StorageObject s15("s15", CPU_BITS, 15);
+StorageObject s16("s16", CPU_BITS, 16);
+StorageObject s17("s17", CPU_BITS, 17);
+StorageObject s18("s18", CPU_BITS, 18);
+StorageObject s19("s19", CPU_BITS, 19);
+
+StorageObject s20("s20", CPU_BITS, 20);
+StorageObject s21("s21", CPU_BITS, 21);
+StorageObject s22("s22", CPU_BITS, 22);
+StorageObject s23("s23", CPU_BITS, 23);
+StorageObject s24("s24", CPU_BITS, 24);
+StorageObject s25("s25", CPU_BITS, 25);
+StorageObject s26("s26", CPU_BITS, 26);
+StorageObject s27("s27", CPU_BITS, 27);
+StorageObject s28("s28", CPU_BITS, 28);
+StorageObject s29("s29", CPU_BITS, 29);
+
+StorageObject s30("s30", CPU_BITS, 30);
+StorageObject s31("s31", CPU_BITS, 31);
+
+StorageObject *shifty_boys[32] = {
+    &s0,
+    &s1,
+    &s2,
+    &s3,
+    &s4,
+    &s5,
+    &s6,
+    &s7,
+    &s8,
+    &s9,
+    &s10,
+    &s11,
+    &s12,
+    &s13,
+    &s14,
+    &s15,
+    &s16,
+    &s17,
+    &s18,
+    &s19,
+    &s20,
+    &s21,
+    &s22,
+    &s23,
+    &s24,
+    &s25,
+    &s26,
+    &s27,
+    &s28,
+    &s29,
+    &s30,
+    &s31,
+};
+
 // EX/MEM components
 
 Clearable exmem_v("EXMEM_V", V_BITS);
-Clearable exmem_cond("EXMEM_COND", CPU_BITS);
+Clearable exmem_cond("EXMEM_COND", 1);
 StorageObject exmem_ir("EXMEM_IR", CPU_BITS);
 StorageObject exmem_pc("EXMEM_PC", CPU_BITS);
 StorageObject exmem_npc("EXMEM_NPC", CPU_BITS);
@@ -177,3 +252,5 @@ MemWbReg memwb = {
 // WB components
 
 Bus wb_bus("WB_BUS", CPU_BITS);
+
+bool done(false);
