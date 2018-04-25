@@ -45,6 +45,7 @@ extern BusALU branch_alu;
 extern StorageObject const_sign_extend_mask;
 extern StorageObject sign_extend_imm;
 extern Bus imm_bus;
+extern Bus z_fill_imm_bus;
 extern Bus op1_bus;
 extern Bus op2_bus;
 extern Bus id_ir_thru;

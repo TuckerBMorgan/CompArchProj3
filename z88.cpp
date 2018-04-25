@@ -179,7 +179,6 @@ void id_stage_first_clock() {
 	  //idex.imm->latchFrom(sign_extend_alu.OUT());
 }
 
-
 void id_stage_second_clock() {
     if(ifid.v->value() == 0) return;
 
@@ -192,7 +191,6 @@ void id_stage_second_clock() {
     id_pc_thru.IN().pullFrom(*ifid.pc);
     id_npc_thru.IN().pullFrom(*ifid.npc);
     id_v_thru.IN().pullFrom(*ifid.v);
-    imm_bus.IN().pullFrom(sign_extend_imm);
 
     idex.ir->latchFrom(id_ir_thru.OUT());//ID/EX.IR ↞ IF/ID.IR;
     idex.pc->latchFrom(id_pc_thru.OUT());//IDEX.PC <- IF/ID.PC;
@@ -200,7 +198,15 @@ void id_stage_second_clock() {
     idex.v->latchFrom(id_v_thru.OUT());//IDEX.V <- IF/ID.V
     idex.a->latchFrom(op1_bus.OUT());//ID/EX.A ← reg[IF/ID.IR[rs]];
     idex.b->latchFrom(op2_bus.OUT());//ID/EX.B ← reg[IF/ID.IR[rt]];
-	  idex.imm->latchFrom(imm_bus.OUT());
+    long op = (*ifid.ir)(31, 26);
+    if( op >= 20 && op <= 22 ) {
+        z_fill_imm_bus.IN().pullFrom(*ifid.ir);
+	      idex.imm->latchFrom(z_fill_imm_bus.OUT());
+    }
+    else {
+        imm_bus.IN().pullFrom(sign_extend_imm);
+	      idex.imm->latchFrom(imm_bus.OUT());
+    }
 }
 
 void ex_stage_first_clock() {
@@ -267,7 +273,7 @@ void ex_stage_second_clock() {
             return;
         }
 
-        if(func_value == 24) {//THIS IS THE SLT instruction
+        if(func_value == 24 && ir_type == 0) {//THIS IS THE SLT instruction
             //We compare rs(idex.a) with rt(idex.b) 
             if((*idex.a)(31,31) == 0 && (*idex.b)(31,31) == 1) {
                 ex_alu.perform(BusALU::op_zero);
@@ -305,7 +311,7 @@ void ex_stage_second_clock() {
             exmem.alu_out->latchFrom(ex_alu.OUT());
             return;
         }
-        if(func_value == 25) {//THIS IS THE SLTU instruction
+        if(func_value == 25 && ir_type == 0) {//THIS IS THE SLTU instruction
             //We compare rs(idex.a) with rt(idex.b)
             if(  (*idex.a).value() < (*idex.b).value() ) {
                 ex_alu.perform(BusALU::op_one);
@@ -545,6 +551,7 @@ void connect() {
     ifid.v->connectsTo(id_v_thru.IN());
     ifid.ir->connectsTo(instr_mem.READ());
     ifid.ir->connectsTo(id_ir_thru.IN());
+    ifid.ir->connectsTo(z_fill_imm_bus.IN());
     ifid.ir->connectsTo(sign_extend_alu.OP1());
     sign_extend_imm.connectsTo(sign_extend_alu.OUT());
     sign_extend_imm.connectsTo(branch_alu.OP1());
@@ -585,6 +592,7 @@ void connect() {
     idex.b->connectsTo(ex_alu.OP2());
     idex.b->connectsTo(ex_alu.OP1());
     idex.imm->connectsTo(imm_bus.OUT());
+    idex.imm->connectsTo(z_fill_imm_bus.OUT());
     idex.imm->connectsTo(ex_alu.OP1());
     idex.imm->connectsTo(ex_alu.OP2());
     shift_amt.connectsTo(ex_alu.OP2());

@@ -103,6 +103,7 @@ BusALU sign_extend_alu("SE_ALU", CPU_BITS);
 StorageObject const_sign_extend_mask("SIGN_EXTEND", CPU_BITS, 0x8000);
 StorageObject sign_extend_imm("SIGN_EXTEND_IMM", CPU_BITS);
 Bus imm_bus("IMM_BUS", CPU_BITS);
+Bus z_fill_imm_bus("Z_FILL_IMM_BUS", CPU_BITS/2);
 Bus op1_bus("OP_BUS1", CPU_BITS);
 Bus op2_bus("OP_BUS2", CPU_BITS);
 Bus id_ir_thru("ID_IR_THRU", CPU_BITS);
