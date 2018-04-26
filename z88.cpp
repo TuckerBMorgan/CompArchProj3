@@ -288,7 +288,7 @@ void ex_stage_second_clock() {
                 ex_alu.perform(BusALU::op_one);
             }
             else {
-                if((*idex.a).value() > (*idex.b).value()) {
+                if((*idex.a).value() >= (*idex.b).value()) {
                     ex_alu.perform(BusALU::op_zero);
                 }
                 else {    
@@ -307,7 +307,7 @@ void ex_stage_second_clock() {
                 ex_alu.perform(BusALU::op_one);
             }
             else {
-                if((*idex.a).value() > (*idex.imm).value()) {
+                if((*idex.a).value() >= (*idex.imm).value()) {
                     ex_alu.perform(BusALU::op_zero);
                 }
                 else {    
@@ -507,12 +507,14 @@ void wb_stage_second_clock() {
 
         if(is_special == 0) {//all special alu opcode write into reg[Mem/WB.ir[rd]]
             size_t rd_index = (*memwb.ir)(15, 11);
-            cout << " " << rnames[rd_index] << "[" << memwb.alu_out->value() << "]";
+            cout << " " << rnames[rd_index] << "[" 
+              << setfill('0') << setw(8) << memwb.alu_out->value() << "]";
             use_register = reg_file[rd_index];
         }
         else {//they write into reg[Mem/WB.ir[rt]]
             size_t rt_index = (*memwb.ir)(20, 16);
-            cout << " " << rnames[rt_index] << "[" << memwb.alu_out->value() << "]";
+            cout << " " << rnames[rt_index] << "["
+              << setfill('0') << setw(8) << memwb.alu_out->value() << "]";
             use_register = reg_file[rt_index];
         }
 
@@ -522,7 +524,8 @@ void wb_stage_second_clock() {
 
     if(opc == LOAD) {
         size_t rt_index = (*memwb.ir)(20, 16);
-        cout << " " << rnames[rt_index] << "[" << memwb.lmd->value() << "]";
+        cout << " " << rnames[rt_index] << "["
+          << setfill('0') << setw(8) << memwb.lmd->value() << "]";
         wb_bus.IN().pullFrom(*memwb.lmd);
         reg_file[rt_index]->latchFrom(wb_bus.OUT());
     }
