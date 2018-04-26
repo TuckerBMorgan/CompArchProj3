@@ -101,6 +101,12 @@ const char* opcode_list_2[][8] = {
     {"-", "-", "-", "-", "-", "-","-", "-"}
 };
 
+const char* rnames[32] = {
+    "R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8",
+    "R9", "R10", "R11", "R12", "R13", "R14", "R15", "R16",
+    "R17", "R18", "R19", "R20", "R21", "R22", "R23", "R24",
+    "R25", "R26", "R27", "R28", "R29", "R30", "R31"
+};
 
 const char* get_opcode_string_from_ir(StorageObject* ir) {
     long opcode = (*ir)(31, 26);
@@ -501,12 +507,12 @@ void wb_stage_second_clock() {
 
         if(is_special == 0) {//all special alu opcode write into reg[Mem/WB.ir[rd]]
             size_t rd_index = (*memwb.ir)(15, 11);
-            cout << " " << *(memwb.alu_out);
+            cout << " " << rnames[rd_index] << "[" << memwb.alu_out->value() << "]";
             use_register = reg_file[rd_index];
         }
         else {//they write into reg[Mem/WB.ir[rt]]
             size_t rt_index = (*memwb.ir)(20, 16);
-            cout << " " << *(memwb.alu_out);
+            cout << " " << rnames[rt_index] << "[" << memwb.alu_out->value() << "]";
             use_register = reg_file[rt_index];
         }
 
@@ -516,7 +522,7 @@ void wb_stage_second_clock() {
 
     if(opc == LOAD) {
         size_t rt_index = (*memwb.ir)(20, 16);
-        cout << " " << *(memwb.lmd);
+        cout << " " << rnames[rt_index] << "[" << memwb.lmd->value() << "]";
         wb_bus.IN().pullFrom(*memwb.lmd);
         reg_file[rt_index]->latchFrom(wb_bus.OUT());
     }

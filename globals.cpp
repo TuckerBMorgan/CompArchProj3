@@ -23,41 +23,41 @@ IfIdReg ifid = {
 }; 
 
 // ID components
-StorageObject r0("r0", CPU_BITS);
-StorageObject r1("r1", CPU_BITS);
-StorageObject r2("r2", CPU_BITS);
-StorageObject r3("r3", CPU_BITS);
-StorageObject r4("r4", CPU_BITS);
-StorageObject r5("r5", CPU_BITS);
-StorageObject r6("r6", CPU_BITS);
-StorageObject r7("r7", CPU_BITS);
-StorageObject r8("r8", CPU_BITS);
-StorageObject r9("r9", CPU_BITS);
+StorageObject r0("R0", CPU_BITS);
+StorageObject r1("R1", CPU_BITS);
+StorageObject r2("R2", CPU_BITS);
+StorageObject r3("R3", CPU_BITS);
+StorageObject r4("R4", CPU_BITS);
+StorageObject r5("R5", CPU_BITS);
+StorageObject r6("R6", CPU_BITS);
+StorageObject r7("R7", CPU_BITS);
+StorageObject r8("R8", CPU_BITS);
+StorageObject r9("R9", CPU_BITS);
 
-StorageObject r10("r10", CPU_BITS);
-StorageObject r11("r11", CPU_BITS);
-StorageObject r12("r12", CPU_BITS);
-StorageObject r13("r13", CPU_BITS);
-StorageObject r14("r14", CPU_BITS);
-StorageObject r15("r15", CPU_BITS);
-StorageObject r16("r16", CPU_BITS);
-StorageObject r17("r17", CPU_BITS);
-StorageObject r18("r18", CPU_BITS);
-StorageObject r19("r19", CPU_BITS);
+StorageObject r10("R10", CPU_BITS);
+StorageObject r11("R11", CPU_BITS);
+StorageObject r12("R12", CPU_BITS);
+StorageObject r13("R13", CPU_BITS);
+StorageObject r14("R14", CPU_BITS);
+StorageObject r15("R15", CPU_BITS);
+StorageObject r16("R16", CPU_BITS);
+StorageObject r17("R17", CPU_BITS);
+StorageObject r18("R18", CPU_BITS);
+StorageObject r19("R19", CPU_BITS);
 
-StorageObject r20("r20", CPU_BITS);
-StorageObject r21("r21", CPU_BITS);
-StorageObject r22("r22", CPU_BITS);
-StorageObject r23("r23", CPU_BITS);
-StorageObject r24("r24", CPU_BITS);
-StorageObject r25("r25", CPU_BITS);
-StorageObject r26("r26", CPU_BITS);
-StorageObject r27("r27", CPU_BITS);
-StorageObject r28("r28", CPU_BITS);
-StorageObject r29("r29", CPU_BITS);
+StorageObject r20("R20", CPU_BITS);
+StorageObject r21("R21", CPU_BITS);
+StorageObject r22("R22", CPU_BITS);
+StorageObject r23("R23", CPU_BITS);
+StorageObject r24("R24", CPU_BITS);
+StorageObject r25("R25", CPU_BITS);
+StorageObject r26("R26", CPU_BITS);
+StorageObject r27("R27", CPU_BITS);
+StorageObject r28("R28", CPU_BITS);
+StorageObject r29("R29", CPU_BITS);
 
-StorageObject r30("r30", CPU_BITS);
-StorageObject r31("r31", CPU_BITS);
+StorageObject r30("R30", CPU_BITS);
+StorageObject r31("R31", CPU_BITS);
 
 StorageObject *reg_file[32] = {
     &r0,
