@@ -134,6 +134,7 @@ void if_stage_second_clock() {
     //all instructions have the opcode in the first 6 bits
     //we only need the top three to see what kinda of instruction it is
     long upper_opcode = (*ifid.ir)(31, 29);    //the * is required so we can deferance and get to the opcode
+    long op = (*ifid.ir)(31, 26);
 
     long rs = (*ifid.ir)(25, 21);//IF/ID.ir(rs)
     long rt = (*ifid.ir)(20, 16);//IF/ID.ir(rt)
@@ -153,6 +154,11 @@ void if_stage_second_clock() {
         branch_alu.perform(BusALU::op_add);
         ifid.npc->latchFrom(branch_alu.OUT());
         pc.latchFrom(branch_alu.OUT());
+    }
+    else if(op == 2 || op == 3) {
+        jump_pc_bus.IN().pullFrom(jump_reg);
+        ifid.npc->latchFrom(jump_pc_bus.OUT());
+        pc.latchFrom(jump_pc_bus.OUT());
     }
     else {
         //else
@@ -183,6 +189,11 @@ void id_stage_first_clock() {
 	  sign_extend_alu.perform(BusALU::op_extendSign);
     sign_extend_imm.latchFrom(sign_extend_alu.OUT());
 	  //idex.imm->latchFrom(sign_extend_alu.OUT());
+    long op = (*ifid.ir)(31, 26);
+    if(op ==2 || op == 3) {
+        jump_reg.latchFrom(jump_reg_thru.OUT());
+        jump_reg_thru.IN().pullFrom(*ifid.ir);
+    }
 }
 
 void id_stage_second_clock() {
@@ -538,7 +549,7 @@ void wb_stage_second_clock() {
             if((reg_file[i])->value() != 0) {
                 cout << "  " << *(reg_file[i]);
                 ++count;
-                if(!count%4) cout << '\n' << "   ";
+                if(count%4 == 0) cout << '\n' << "   ";
             }
         }
         cout << '\n';
@@ -551,6 +562,7 @@ void connect() {
     pc.connectsTo(if_pc_thru.IN());
     pc.connectsTo(addr_alu.OUT());
     pc.connectsTo(branch_alu.OUT());
+    pc.connectsTo(jump_pc_bus.OUT());
     pc.connectsTo(instr_mem.READ());
     instr_mem.MAR().connectsTo(instr_abus.OUT());
     const_addr_inc.connectsTo(addr_alu.OP1());
@@ -563,6 +575,9 @@ void connect() {
     ifid.ir->connectsTo(id_ir_thru.IN());
     ifid.ir->connectsTo(z_fill_imm_bus.IN());
     ifid.ir->connectsTo(sign_extend_alu.OP1());
+    ifid.ir->connectsTo(jump_reg_thru.IN());
+    jump_reg.connectsTo(jump_pc_bus.IN());
+    jump_reg.connectsTo(jump_reg_thru.OUT());
     sign_extend_imm.connectsTo(sign_extend_alu.OUT());
     sign_extend_imm.connectsTo(branch_alu.OP1());
     sign_extend_imm.connectsTo(imm_bus.IN());
@@ -572,6 +587,7 @@ void connect() {
     ifid.pc->connectsTo(id_pc_thru.IN());
     ifid.pc->connectsTo(if_pc_thru.OUT());
     ifid.npc->connectsTo(addr_alu.OUT());
+    ifid.npc->connectsTo(jump_pc_bus.OUT());
     ifid.npc->connectsTo(branch_alu.OUT());
     ifid.npc->connectsTo(branch_alu.OP2());
     ifid.npc->connectsTo(id_npc_thru.IN());

@@ -9,8 +9,10 @@ StorageObject const_addr_inc("CONST_ADDR_INCR", CPU_BITS, 0x04);
 StorageObject const_valid_on("CONST_VALID_ON", CPU_BITS, 0x01);
 StorageObject const_valid_off("CONST_VALID_OFF", CPU_BITS, 0x00);
 StorageObject mdr("mdr", CPU_BITS);
+StorageObject jump_reg("JUMP_REG", CPU_BITS);
 Bus valid_bus("VALID_BUS", V_BITS);
 Bus if_pc_thru("IF_PC_THRU", CPU_BITS);
+Bus jump_pc_bus("JUMP_PC_BUS", CPU_BITS);
 BusALU ir_immed_to_ifid_signexted_imm("IR_IMMED_TO_IFID_SIGNEXNTED_IMM", CPU_BITS / 2);
 // IF/ID components 
 
@@ -106,6 +108,7 @@ Bus imm_bus("IMM_BUS", CPU_BITS);
 Bus z_fill_imm_bus("Z_FILL_IMM_BUS", CPU_BITS/2);
 Bus op1_bus("OP_BUS1", CPU_BITS);
 Bus op2_bus("OP_BUS2", CPU_BITS);
+Bus jump_reg_thru("JUMP_REG_THRU", 26);
 Bus id_ir_thru("ID_IR_THRU", CPU_BITS);
 Bus id_pc_thru("ID_PC_THRU", CPU_BITS);
 Bus id_npc_thru("ID_NPC_THRU", CPU_BITS);
