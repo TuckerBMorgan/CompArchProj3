@@ -138,6 +138,7 @@ void if_stage_second_clock() {
 
     long rs = (*ifid.ir)(25, 21);//IF/ID.ir(rs)
     long rt = (*ifid.ir)(20, 16);//IF/ID.ir(rt)
+    long low_op = (*ifid.ir)(5,0);
 
     bool are_equal = reg_file[rs]->value() == reg_file[rt]->value();
     long notEqual_or_equal = (*ifid.ir)(28, 26);
@@ -155,7 +156,7 @@ void if_stage_second_clock() {
         ifid.npc->latchFrom(branch_alu.OUT());
         pc.latchFrom(branch_alu.OUT());
     }
-    else if(op == 2 || op == 3) {
+    else if(op == 2 || op == 3 || (op == 0 && (low_op == 2 || low_op == 3))) {
         jump_pc_bus.IN().pullFrom(jump_reg);
         ifid.npc->latchFrom(jump_pc_bus.OUT());
         pc.latchFrom(jump_pc_bus.OUT());
@@ -190,9 +191,26 @@ void id_stage_first_clock() {
     sign_extend_imm.latchFrom(sign_extend_alu.OUT());
 	  //idex.imm->latchFrom(sign_extend_alu.OUT());
     long op = (*ifid.ir)(31, 26);
-    if(op ==2 || op == 3) {
+    long low_op = (*ifid.ir)(5,0);
+    if(op == 2 || op == 3) {
         jump_reg.latchFrom(jump_reg_thru.OUT());
         jump_reg_thru.IN().pullFrom(*ifid.ir);
+        if(op == 3) {
+            branch_alu.OP1().pullFrom(const_eight);
+            branch_alu.OP2().pullFrom(*ifid.pc);
+            branch_alu.perform(BusALU::op_add);
+            reg_file[31]->latchFrom(branch_alu.OUT());
+        }
+    }
+    if(op == 0 && (low_op == 2 || low_op == 3)) {
+        jump_reg.latchFrom(jump_reg_thru32.OUT());
+        jump_reg_thru32.IN().pullFrom(*reg_file[(*ifid.ir)(25, 21)]);
+        if(low_op == 3) {
+            branch_alu.OP1().pullFrom(const_eight);
+            branch_alu.OP2().pullFrom(*ifid.pc);
+            branch_alu.perform(BusALU::op_add);
+            reg_file[31]->latchFrom(branch_alu.OUT());
+        }
     }
 }
 
@@ -444,7 +462,7 @@ void mem_stage_first_clock() {
         MEM/WB.IR ← EX/MEM.IR;
     */
 
-        mem_abus.IN().pullFrom(*exmem.imm);
+        mem_abus.IN().pullFrom(*exmem.alu_out);
         data_mem.MAR().latchFrom(mem_abus.OUT());
         data_mem.WRITE().pullFrom(*exmem.b);
     }
@@ -453,7 +471,7 @@ void mem_stage_first_clock() {
         Load/store instructions:
         MEM/WB.IR ← EX/MEM.IR;
     */
-        mem_abus.IN().pullFrom(*exmem.imm);
+        mem_abus.IN().pullFrom(*exmem.alu_out);
         data_mem.MAR().latchFrom(mem_abus.OUT());
     }
 }
@@ -578,9 +596,11 @@ void connect() {
     ifid.ir->connectsTo(jump_reg_thru.IN());
     jump_reg.connectsTo(jump_pc_bus.IN());
     jump_reg.connectsTo(jump_reg_thru.OUT());
+    jump_reg.connectsTo(jump_reg_thru32.OUT());
     sign_extend_imm.connectsTo(sign_extend_alu.OUT());
     sign_extend_imm.connectsTo(branch_alu.OP1());
     sign_extend_imm.connectsTo(imm_bus.IN());
+    const_eight.connectsTo(branch_alu.OP1());
     ifid.pc->connectsTo(addr_alu.OUT());
     //  ifid.pc->connectsTo(branch_alu.OUT());
     ifid.pc->connectsTo(branch_alu.OP2());
@@ -592,10 +612,12 @@ void connect() {
     ifid.npc->connectsTo(branch_alu.OP2());
     ifid.npc->connectsTo(id_npc_thru.IN());
     const_sign_extend_mask.connectsTo(sign_extend_alu.OP2());
+    reg_file[31]->connectsTo(branch_alu.OUT());
     for(int i = 0; i < 32; ++i) {
         reg_file[i]->connectsTo(op1_bus.IN());
         reg_file[i]->connectsTo(op2_bus.IN());
         reg_file[i]->connectsTo(wb_bus.OUT());
+        reg_file[i]->connectsTo(jump_reg_thru32.IN());
     }
 
     idex.v->connectsTo(id_v_thru.OUT());
