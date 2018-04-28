@@ -134,4 +134,9 @@ extern MemWbReg memwb;
 extern Bus wb_bus;
 
 extern bool done;
+
+extern const char *halt_instr;
+extern const char *unimp_instr;
+extern const char *undef_instr;
+
 #endif

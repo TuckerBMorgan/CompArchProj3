@@ -12,6 +12,8 @@
 //done is ex stage ADDI, ANDI, ORI, XORI, ADD, SUB, AND, OR, XOR, SLL, SRL, SRA, SLLV, SRLV, SRAV
 //SLTI, BEQ, BNE
 
+const char *culprit;
+
 enum OPCodeClass {
     ALU,
     BRANCH,
@@ -282,7 +284,7 @@ void ex_stage_second_clock() {
         long two_o = (*idex.ir)(2, 0);
         long five_three = (*idex.ir)(5, 3);
 
-        if(ir_type == 0 && is_shifts >= 37){//ALLL SHIFT OPERATIONS
+        if(ir_type == 0 && ((is_shifts >= 37 && is_shifts <= 39) || (is_shifts >= 45 && is_shifts <= 47))){//ALLL SHIFT OPERATIONS
 
             ex_alu.OP1().pullFrom(*idex.b);
 
@@ -378,6 +380,7 @@ void ex_stage_second_clock() {
         else {
             ex_alu.OP2().pullFrom(*idex.imm);
             func = (int)(*idex.ir)(28, 26);
+            if(func == 18 || func == 19 || func == 23) return;
         }
 
         switch (func) {
@@ -386,13 +389,13 @@ void ex_stage_second_clock() {
                 break;
             case 1:
                 //unknown
-                break;
+                return;
             case 2:
                 ex_alu.perform(BusALU::op_sub);
                 break;
             case 3:
                 //unknown
-                break;
+                return;
             case 4:
                 //AND
                 ex_alu.perform(BusALU::op_and);
@@ -408,14 +411,14 @@ void ex_stage_second_clock() {
             case 7:
                 //technically unknown
                 //ex_alu.perform(BusALU::op_or);
-                break;
+                return;
         }
 
         exmem.alu_out->latchFrom(ex_alu.OUT());
         return;
    }
 
-   if(ir_type >= 32 && ir_type < 48) {//32 -> 48 are all the load store operations we care about, we are preforming nothing from the special table
+   if(ir_type == 35 || ir_type == 43) {//32 -> 48 are all the load store operations we care about, we are preforming nothing from the special table
         //EX/MEM.IR ← ID/EX.IR;
         ex_ir_thru.IN().pullFrom(*idex.ir);
         exmem.ir->latchFrom(ex_ir_thru.OUT());
@@ -433,19 +436,20 @@ void ex_stage_second_clock() {
    }
 
 
-
-    //Branch
-    // EXS/MEM.ALUOutput ← ID/EX.NPC + ID/EX.Imm;
-    ex_alu.OP1().pullFrom(*idex.npc);
-    ex_alu.OP2().pullFrom(*idex.imm);//THIS MIGHT BE VERY WRONG
-    ex_alu.perform(BusALU::op_add);
-    exmem.alu_out->latchFrom(ex_alu.OUT());
-    //    EX/MEM.cond ← (ID/EX.A == 0);
-    if(idex.a->value() == 0) {
-        exmem.cond->set();
-    }
-    else {
-        exmem.cond->clear();
+    if(ir_type == 60 || ir_type == 61) {
+        //Branch
+        // EXS/MEM.ALUOutput ← ID/EX.NPC + ID/EX.Imm;
+        ex_alu.OP1().pullFrom(*idex.npc);
+        ex_alu.OP2().pullFrom(*idex.imm);//THIS MIGHT BE VERY WRONG
+        ex_alu.perform(BusALU::op_add);
+        exmem.alu_out->latchFrom(ex_alu.OUT());
+        //    EX/MEM.cond ← (ID/EX.A == 0);
+        if(idex.a->value() == 0) {
+            exmem.cond->set();
+        }
+        else {
+            exmem.cond->clear();
+        }
     }
 
 }
@@ -518,7 +522,26 @@ void wb_stage_second_clock() {
     long ir_val = (*(memwb.ir))(31, 26);
     long pc_val = memwb.pc->value();
     long other_ir = (*(memwb.ir))(5, 0);
-    const char *str = get_opcode_string_from_ir(memwb.ir); 
+    const char *str = get_opcode_string_from_ir(memwb.ir);
+
+    if(strcmp(str, "-") == 0) {
+        culprit = undef_instr;
+        str = "???????";
+        done = true;
+    }
+    if(strcmp(str, "ADDIU  ") == 0 ||
+    strcmp(str, "LB     ") == 0 || strcmp(str, "LH     ") == 0 || 
+    strcmp(str, "LBU    ") == 0 || strcmp(str, "LHU    ") == 0 ||
+    strcmp(str, "SH     ") == 0 || strcmp(str, "SB     ") == 0 ||
+    strcmp(str, "BLTZ   ") == 0 || strcmp(str, "BLTZAL ") == 0 ||
+    strcmp(str, "BGEZ   ") == 0 || strcmp(str, "BGEZAL ") == 0 ||
+    strcmp(str, "BLEZ   ") == 0 || strcmp(str, "BGTZ   ") == 0 ||
+    strcmp(str, "SYSCALL") == 0 || strcmp(str, "ADDU   ") == 0 ||
+    strcmp(str, "SUBU   ") == 0 || strcmp(str, "NOR    ") == 0) {
+        culprit = unimp_instr;
+        done = true;
+    }
+
     cout << setfill('0') << setw(8) << pc_val << ":  " <<
     setfill('0') << setw(2) << ir_val << " ";
     if( ir_val == 0) {
@@ -530,6 +553,17 @@ void wb_stage_second_clock() {
 
     cout << str;
 
+    if(done) {
+        cout << '\n';
+        return;
+    }
+
+    if(ir_val == 3 || (ir_val == 0 && other_ir == 3)) {
+        size_t rs_index = (*memwb.ir)(25, 21);
+        cout << " " << rnames[rs_index] << "[" 
+          << setfill('0') << setw(8) << reg_file[rs_index]->value() << "]";
+
+    }
     if(opc == ALU) {
         long is_special = (*memwb.ir)(31, 26);
         StorageObject* use_register;
@@ -559,7 +593,10 @@ void wb_stage_second_clock() {
         reg_file[rt_index]->latchFrom(wb_bus.OUT());
     }
     cout << '\n';
-    if(ir_val == 0 && other_ir == 0) done = true;
+    if(ir_val == 0 && other_ir == 0) {
+        done = true;
+        culprit = halt_instr;
+    }
     if(ir_val == 0 && other_ir == 7) {
         cout << "   ";
         int count = 0;
@@ -701,6 +738,7 @@ void simulate(char *objfile) {
         if_stage_second_clock();
         Clock::tick();
     }
+    cout << "Machine Halted - " << culprit;
 }
 
 int main(int argc, char *argv[]) {

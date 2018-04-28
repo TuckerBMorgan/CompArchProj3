@@ -3,7 +3,7 @@
 
 BusALU addr_alu("ADDR_ALU", CPU_BITS);
 StorageObject pc("PC", CPU_BITS);
-Memory instr_mem("INSTR_MEM", CPU_BITS, BITS_PER_UNIT, MAX_ADDR, UNITS_PER);
+Memory instr_mem("IMemory", CPU_BITS, BITS_PER_UNIT, MAX_ADDR, UNITS_PER);
 Bus instr_abus("INSTR_ABUS", CPU_BITS);
 StorageObject const_addr_inc("CONST_ADDR_INCR", CPU_BITS, 0x04);
 StorageObject const_valid_on("CONST_VALID_ON", CPU_BITS, 0x01);
@@ -230,7 +230,7 @@ ExMemReg exmem = {
 
 // MEM components
 
-Memory data_mem("DATA_MEM", CPU_BITS, BITS_PER_UNIT, MAX_ADDR, UNITS_PER);
+Memory data_mem("DMemory", CPU_BITS, BITS_PER_UNIT, MAX_ADDR, UNITS_PER);
 Bus mem_abus("MEM_ABUS", CPU_BITS);
 Bus mem_ir_thru("MEM_IR_THRU", CPU_BITS);
 Bus mem_pc_thru("MEM_PC_THRU", CPU_BITS);
@@ -260,3 +260,7 @@ MemWbReg memwb = {
 Bus wb_bus("WB_BUS", CPU_BITS);
 
 bool done(false);
+
+const char *halt_instr = "HALT instruction executed\n";
+const char *unimp_instr = "unimplemented instruction\n";
+const char *undef_instr = "undefined instruction\n";
