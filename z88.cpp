@@ -296,7 +296,7 @@ void ex_stage_second_clock() {
     long func_value = (*idex.ir)(5, 0);
 
     //FIRST WE CHECK FOR THE SPECIAL ALU OPS
-    if( (ir_type  == 0 && func_value >= 16) || (ir_type >= 16 && ir_type < 32) || ir_type == 39) {//FAKE ALU THIS NEEDS ACTUAL VALUE
+    if( (ir_type  == 0 && func_value >= 16) || (ir_type >= 16 && ir_type < 32) || ir_type == 39) {
         long is_shifts = (*idex.ir)(5, 0);
         long two_o = (*idex.ir)(2, 0);
         long five_three = (*idex.ir)(5, 3);
@@ -385,7 +385,19 @@ void ex_stage_second_clock() {
             return;
         }
 
-        ex_alu.OP1().pullFrom(*idex.a);
+        if(ex_mem_destination_equals_id_ex_source || mem_wb_destination_equals_id_ex_source 
+            || ex_mem_temp_equals_id_ex_source || mem_wb_temp_equals_id_ex_temp) {
+                if(ex_mem_destination_equals_id_ex_source || ex_mem_temp_equals_id_ex_source) {
+                    ex_alu.OP1().pullFrom(*exmem.alu_out);
+                }
+                else {
+                    ex_alu.OP1().pullFrom(*memwb.alu_out);
+                }
+        }
+        else {
+            //top alu op
+            ex_alu.OP1().pullFrom(*idex.a);
+        }
 
         long is_special = (*idex.ir)(31, 26);
         int func;
@@ -456,8 +468,21 @@ void ex_stage_second_clock() {
         b_thru.IN().pullFrom(*idex.b);
         exmem.b->latchFrom(b_thru.OUT());
 
-        //EX/MEM.ALUOutput ← ID/EX.A + ID/EX.Imm;
-        ex_alu.OP1().pullFrom(*idex.a);
+        if(ex_mem_destination_equals_id_ex_source || mem_wb_destination_equals_id_ex_source 
+           || ex_mem_temp_equals_id_ex_source || mem_wb_temp_equals_id_ex_source) {
+               if(ex_mem_destination_equals_id_ex_source || ex_mem_temp_equals_id_ex_source) {
+                    ex_alu.OP1().pullFrom(*exmem.alu_out);
+               }
+               else {
+                    ex_alu.OP1().pullFrom(*memwb.alu_out);
+               }
+           }
+           else {
+                //EX/MEM.ALUOutput ← ID/EX.A + ID/EX.Imm;
+                ex_alu.OP1().pullFrom(*idex.a);
+           }
+
+
         ex_alu.OP2().pullFrom(*idex.imm);
         ex_alu.perform(BusALU::op_add);
         exmem.alu_out->latchFrom(ex_alu.OUT());
