@@ -235,6 +235,7 @@ void id_stage_second_clock() {
     idex.v->latchFrom(id_v_thru.OUT());//IDEX.V <- IF/ID.V
     idex.a->latchFrom(op1_bus.OUT());//ID/EX.A ← reg[IF/ID.IR[rs]];
     idex.b->latchFrom(op2_bus.OUT());//ID/EX.B ← reg[IF/ID.IR[rt]];
+
     long op = (*ifid.ir)(31, 26);
     if( op >= 20 && op <= 22 ) {
         z_fill_imm_bus.IN().pullFrom(*ifid.ir);
@@ -251,17 +252,34 @@ void ex_stage_first_clock() {
     long is_special = (*idex.ir)(31, 26);
     long is_nor = (*idex.ir)(5, 0);
 
+    /*
     if(is_special == 0 && is_nor == 23) {//if this is a nor operation, lets not it and then drop it back into idex.a, 23 is the func code for nor
         ex_alu.OP1().pullFrom(*idex.a);
         ex_alu.perform(BusALU::op_not);
         idex.a->latchFrom(ex_alu.OUT());
     }
+    */
+
     rs_lower5.IN().pullFrom(*(idex.a));
     shift_amt.latchFrom(rs_lower5.OUT());
 }
 
 void ex_stage_second_clock() {
     if(idex.v->value() == 0) return;
+	
+    //we preform all forwarding condtion tests here, simply easier to keep track of them in this form
+	bool ex_mem_destination_equals_id_ex_source = (*exmem.ir)(15, 11) == (*idex.ir)(25, 21);
+	bool ex_mem_destination_equals_id_ex_temp = (*exmem.ir)(15, 11) == (*idex.ir)(20, 16);
+
+    bool mem_wb_destination_equals_id_ex_source = (*memwb.ir)(15, 11) == (*idex.ir)(25, 21);
+    bool mem_wb_destination_equals_id_ex_temp = (*memwb.ir)(15, 11) == (*idex.ir)(20, 16);
+    
+    bool ex_mem_temp_equals_id_ex_source = (*exmem.ir)(20, 16) == (*idex.ir)(25, 21);
+	bool ex_mem_temp_equals_id_ex_temp = (*exmem.ir)(20, 16) == (*idex.ir)(20, 16);
+
+    bool mem_wb_temp_equals_id_ex_source = (*memwb.ir)(20, 16) == (*idex.ir)(25, 21);
+    bool mem_wb_temp_equals_id_ex_temp = (*memwb.ir)(20, 16) == (*idex.ir)(20, 16);
+
     //only ALU and Load/Store opreations require we do this, but at the same time there is nore doing this for the branch insturctions as it doe not use the IR register
     ex_ir_thru.IN().pullFrom(*idex.ir);
     exmem.ir->latchFrom(ex_ir_thru.OUT());//this wil get excuted when we perform the alu op
@@ -273,7 +291,6 @@ void ex_stage_second_clock() {
     exmem.npc->latchFrom(ex_npc_thru.OUT());
     ex_imm_thru.IN().pullFrom(*idex.imm);
     exmem.imm->latchFrom(ex_imm_thru.OUT());
-
 
     long ir_type = (*idex.ir)(31, 26);
     long func_value = (*idex.ir)(5, 0);
@@ -374,7 +391,19 @@ void ex_stage_second_clock() {
         int func;
 
         if(is_special == 0) {//in this case is_special points out that we are preforming a R-R alu op
-            ex_alu.OP2().pullFrom(*idex.b);
+            if(ex_mem_destination_equals_id_ex_temp || ex_mem_temp_equals_id_ex_source || 
+               mem_wb_destination_equals_id_ex_temp || mem_wb_temp_equals_id_ex_source || mem_wb_temp_equals_id_ex_temp) {
+
+                if(ex_mem_destination_equals_id_ex_temp || ex_mem_temp_equals_id_ex_source) {
+                    ex_alu.OP2().pullFrom(*exmem.alu_out);
+                }
+                else {
+                    ex_alu.OP2().pullFrom(*memwb.alu_out);
+                }
+            }
+            else {
+                ex_alu.OP2().pullFrom(*idex.b);
+            }
             func = (int)(*idex.ir)(2, 0);//this is the operation we are performing with ex_alu
         }
         else {

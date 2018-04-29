@@ -1,8 +1,8 @@
 CPU "ARCH" Simulator, 2.5a(Jan 22 2015)
 -----------------------------------------
 
-IMemory sets starting address to 100
-DMemory sets starting address to 100
+INSTR_MEM sets starting address to 100
+DATA_MEM sets starting address to 100
 00000100:  10    ADDI    R1[00000010]
 00000104:  10    ADDI    R2[00000004]
 00000108:  10    ADDI    R3[ffffffff]
@@ -23,7 +23,6 @@ DMemory sets starting address to 100
 00000144:  00 26 SRL     R17[00000001]
 00000148:  00 27 SRA     R18[ffffffff]
 0000014c:  00 00 HALT   
-Machine Halted - HALT instruction executed
 
 Simulated time 49 cycles
 
