@@ -492,9 +492,24 @@ void ex_stage_second_clock() {
 
     if(ir_type == 60 || ir_type == 61) {
         //Branch
+
+         if(ex_mem_destination_equals_id_ex_source || mem_wb_destination_equals_id_ex_source 
+           || ex_mem_temp_equals_id_ex_source || mem_wb_temp_equals_id_ex_source) {
+               if(ex_mem_destination_equals_id_ex_source || ex_mem_temp_equals_id_ex_source) {
+                    ex_alu.OP1().pullFrom(*exmem.alu_out);
+               }
+               else {
+                    ex_alu.OP1().pullFrom(*memwb.alu_out);
+               }
+           }
+        else {
         // EXS/MEM.ALUOutput ← ID/EX.NPC + ID/EX.Imm;
-        ex_alu.OP1().pullFrom(*idex.npc);
+            ex_alu.OP1().pullFrom(*idex.npc);
+        }
+
+
         ex_alu.OP2().pullFrom(*idex.imm);//THIS MIGHT BE VERY WRONG
+
         ex_alu.perform(BusALU::op_add);
         exmem.alu_out->latchFrom(ex_alu.OUT());
         //    EX/MEM.cond ← (ID/EX.A == 0);
