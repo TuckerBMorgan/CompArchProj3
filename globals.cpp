@@ -1,3 +1,11 @@
+///
+/// globals.cpp
+///
+/// T. Morgan, J. Schenk
+///
+/// Sets up hardware global vars.
+///
+///////////////////////////////////////////////////////////////////////////////
 #include "includes.h"
 // IF components
 
