@@ -264,26 +264,19 @@ void ex_stage_first_clock() {
     shift_amt.latchFrom(rs_lower5.OUT());
 }
 
-void ex_stage_second_clock() {
+void ex_stage_second_clock() { 
     if(idex.v->value() == 0) return;
 	
 
     bool is_exmem_valid = exmem.v->value() == true;
-    cout << "THIS SHOULD BE FALSE" << is_exmem_valid << "\n";
     bool is_memwb_valid = memwb.v->value() == true;
 
     //we preform all forwarding condtion tests here, simply easier to keep track of them in this form
-	bool ex_mem_destination_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(25, 21) : false;
-	bool ex_mem_destination_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(20, 16) : false;
-
-    bool mem_wb_destination_equals_id_ex_source = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(25, 21) : false;
-    bool mem_wb_destination_equals_id_ex_temp = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(20, 16) : false;
-    
-    bool ex_mem_temp_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(20, 16) == (*idex.ir)(25, 21) : false;
-	bool ex_mem_temp_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(20, 16) == (*idex.ir)(20, 16) : false;
-
-    bool mem_wb_temp_equals_id_ex_source = is_memwb_valid ? (*memwb.ir)(20, 16) == (*idex.ir)(25, 21) : false;
-    bool mem_wb_temp_equals_id_ex_temp = is_memwb_valid ? (*memwb.ir)(20, 16) == (*idex.ir)(20, 16) : false;
+    cout << *exmem.ir << " || " << *idex.ir << "\n";
+    cout << (*exmem.ir)(15, 11) << " || " << (*idex.ir)(25, 21) << "\n";
+    if(is_exmem_valid) {
+        cout << get_opcode_string_from_ir(exmem.ir) << " || " << get_opcode_string_from_ir(idex.ir);
+    }
 
     //only ALU and Load/Store opreations require we do this, but at the same time there is nore doing this for the branch insturctions as it doe not use the IR register
     ex_ir_thru.IN().pullFrom(*idex.ir);
@@ -306,9 +299,23 @@ void ex_stage_second_clock() {
         long two_o = (*idex.ir)(2, 0);
         long five_three = (*idex.ir)(5, 3);
 
+        bool ex_mem_destination_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(25, 21) : false;
+        bool ex_mem_destination_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(20, 16) : false;
+
+        bool mem_wb_destination_equals_id_ex_source = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(25, 21) : false;
+        bool mem_wb_destination_equals_id_ex_temp = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(20, 16) : false;
+        
+        bool ex_mem_temp_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(20, 16) == (*idex.ir)(25, 21) : false;
+        bool ex_mem_temp_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(20, 16) == (*idex.ir)(20, 16) : false;
+
+        bool mem_wb_temp_equals_id_ex_source = is_memwb_valid ? (*memwb.ir)(20, 16) == (*idex.ir)(25, 21) : false;
+        bool mem_wb_temp_equals_id_ex_temp = is_memwb_valid ? (*memwb.ir)(20, 16) == (*idex.ir)(20, 16) : false;
+
+
         if(ir_type == 0 && ((is_shifts >= 37 && is_shifts <= 39) || (is_shifts >= 45 && is_shifts <= 47))){//ALLL SHIFT OPERATIONS
 
             ex_alu.OP1().pullFrom(*idex.b);
+
 
             if(five_three == 4) {
                 long shft = (*idex.ir)(10, 6);
@@ -465,6 +472,19 @@ void ex_stage_second_clock() {
    }
 
    if(ir_type == 35 || ir_type == 43) {//32 -> 48 are all the load store operations we care about, we are preforming nothing from the special table
+
+        bool ex_mem_destination_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(25, 21) : false;
+        bool ex_mem_destination_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(20, 16) : false;
+
+        bool mem_wb_destination_equals_id_ex_source = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(25, 21) : false;
+        bool mem_wb_destination_equals_id_ex_temp = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(20, 16) : false;
+        
+        bool ex_mem_temp_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(20, 16) == (*idex.ir)(25, 21) : false;
+        bool ex_mem_temp_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(20, 16) == (*idex.ir)(20, 16) : false;
+
+        bool mem_wb_temp_equals_id_ex_source = is_memwb_valid ? (*memwb.ir)(20, 16) == (*idex.ir)(25, 21) : false;
+        bool mem_wb_temp_equals_id_ex_temp = is_memwb_valid ? (*memwb.ir)(20, 16) == (*idex.ir)(20, 16) : false;
+
         //EX/MEM.IR ← ID/EX.IR;
         ex_ir_thru.IN().pullFrom(*idex.ir);
         exmem.ir->latchFrom(ex_ir_thru.OUT());
@@ -476,9 +496,6 @@ void ex_stage_second_clock() {
         if(ex_mem_destination_equals_id_ex_source || mem_wb_destination_equals_id_ex_source 
            || ex_mem_temp_equals_id_ex_source || mem_wb_temp_equals_id_ex_source) {
                if(ex_mem_destination_equals_id_ex_source || ex_mem_temp_equals_id_ex_source) {
-                   cout << "NOT THE BEEES\n";
-
-                   cout << ex_mem_destination_equals_id_ex_source << " " << mem_wb_destination_equals_id_ex_source << " " << ex_mem_temp_equals_id_ex_source << " " << mem_wb_temp_equals_id_ex_source;
                     ex_alu.OP1().pullFrom(*exmem.alu_out);
                }
                else {
@@ -500,11 +517,21 @@ void ex_stage_second_clock() {
 
     if(ir_type == 60 || ir_type == 61) {
         //Branch
+        bool ex_mem_destination_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(25, 21) : false;
+        bool ex_mem_destination_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(20, 16) : false;
+
+        bool mem_wb_destination_equals_id_ex_source = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(25, 21) : false;
+        bool mem_wb_destination_equals_id_ex_temp = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(20, 16) : false;
+        
+        bool ex_mem_temp_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(20, 16) == (*idex.ir)(25, 21) : false;
+        bool ex_mem_temp_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(20, 16) == (*idex.ir)(20, 16) : false;
+
+        bool mem_wb_temp_equals_id_ex_source = is_memwb_valid ? (*memwb.ir)(20, 16) == (*idex.ir)(25, 21) : false;
+        bool mem_wb_temp_equals_id_ex_temp = is_memwb_valid ? (*memwb.ir)(20, 16) == (*idex.ir)(20, 16) : false;
 
          if(ex_mem_destination_equals_id_ex_source || mem_wb_destination_equals_id_ex_source 
            || ex_mem_temp_equals_id_ex_source || mem_wb_temp_equals_id_ex_source) {
                if(ex_mem_destination_equals_id_ex_source || ex_mem_temp_equals_id_ex_source) {
-                   cout << "AHHHHHH\n";
                     ex_alu.OP1().pullFrom(*exmem.alu_out);
                }
                else {
@@ -754,6 +781,8 @@ void connect() {
     idex.a->connectsTo(ex_alu.OP1());
     idex.a->connectsTo(ex_alu.OP2());
     idex.a->connectsTo(ex_alu.OUT());
+
+
     idex.a->connectsTo(rs_lower5.IN());
     idex.b->connectsTo(op2_bus.OUT());
     idex.b->connectsTo(b_thru.IN());
@@ -788,6 +817,7 @@ void connect() {
     exmem.alu_out->connectsTo(mem_alu_out_thru.IN());
     exmem.alu_out->connectsTo(mem_abus.IN());
     exmem.alu_out->connectsTo(data_mem.WRITE());
+    exmem.alu_out->connectsTo(ex_alu.OP1());
     data_mem.MAR().connectsTo(mem_abus.OUT());
 
     memwb.v->connectsTo(mem_v_thru.OUT());
@@ -796,6 +826,7 @@ void connect() {
     memwb.npc->connectsTo(mem_npc_thru.OUT());
     memwb.alu_out->connectsTo(mem_alu_out_thru.OUT());
     memwb.alu_out->connectsTo(wb_bus.IN());
+    memwb.alu_out->connectsTo(ex_alu.OP1());
     memwb.lmd->connectsTo(data_mem.READ());
     memwb.lmd->connectsTo(wb_bus.IN());
 }
@@ -815,15 +846,16 @@ bool stall_check_for_idex() {
                 }        
             }
         }
-        else if((*idex.ir)(20, 16) == (*ifid.ir)(20, 16) ) {
-            return true;
+        else if((*ifid.ir)(31, 26) >= 16) {
+            if((*idex.ir)(20, 16) == (*ifid.ir)(20, 16) ) {
+                return true;
+            }
         }
     }
     return false;
 }
 
 bool stall_check_for_exmem() {
-
     if(idex.v->value() == true && exmem.v->value() == true) {
         if((*ifid.ir)(31, 26) <= 50) {
             return false;
