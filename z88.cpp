@@ -1,16 +1,17 @@
+///
+/// z88.cpp
+///
+/// T. Morgan. J.Schenk
+///
+/// This file contains most of the pieces that simulate the z88 processor
+///
+////////////////////////////////////////////////////////////////////////////////
+
 #include <string.h>
 #include <stdio.h>
 #include <iostream>
 #include "includes.h"
 #include "globals.h"
-
-
-//NOP J JAL LUI LW SW
-//HALT JR JALR BREAK SLT SLTU
-
-
-//done is ex stage ADDI, ANDI, ORI, XORI, ADD, SUB, AND, OR, XOR, SLL, SRL, SRA, SLLV, SRLV, SRAV
-//SLTI, BEQ, BNE
 
 const char *culprit;
 
@@ -860,6 +861,9 @@ void wb_stage_second_clock() {
 
 }
 
+///
+/// Connects hardware components
+///
 void connect() {
     pc.connectsTo(addr_alu.OP2());
     pc.connectsTo(instr_abus.IN());
@@ -943,7 +947,6 @@ void connect() {
         shifty_boys[i]->connectsTo(ex_alu.OP2());
     }
 
-    //TODO COND?????
     exmem.v->connectsTo(ex_v_thru.OUT());
     exmem.ir->connectsTo(injection_bus.OUT());
     exmem.v->connectsTo(mem_v_thru.IN());
@@ -1044,6 +1047,9 @@ void inject_nop_into_stage(bool which_stage) {
     }
 }
 
+///
+/// Runs z88 simulation
+///
 void simulate(char *objfile) {
   //  CPUObject::debug |= CPUObject::trace;
     // Load object file
@@ -1092,6 +1098,9 @@ void simulate(char *objfile) {
     cout << "Machine Halted - " << culprit;
 }
 
+///
+/// Entry point
+///
 int main(int argc, char *argv[]) {
   // Make sure we have an object file
 
