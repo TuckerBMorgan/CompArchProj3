@@ -10,12 +10,13 @@ StorageObject const_valid_on("CONST_VALID_ON", CPU_BITS, 0x01);
 StorageObject const_valid_off("CONST_VALID_OFF", CPU_BITS, 0x00);
 StorageObject mdr("mdr", CPU_BITS);
 StorageObject jump_reg("JUMP_REG", CPU_BITS);
+StorageObject const_nop_value("NOP_REG", CPU_BITS, 0x04000000);
 Bus valid_bus("VALID_BUS", V_BITS);
 Bus if_pc_thru("IF_PC_THRU", CPU_BITS);
 Bus jump_pc_bus("JUMP_PC_BUS", CPU_BITS);
 BusALU ir_immed_to_ifid_signexted_imm("IR_IMMED_TO_IFID_SIGNEXNTED_IMM", CPU_BITS / 2);
 // IF/ID components 
-
+Bus injection_bus("INJECT_BUS", CPU_BITS);
 Clearable ifid_v("IFID_V", V_BITS);
 StorageObject ifid_ir("IFID_IR", CPU_BITS);
 StorageObject ifid_pc("IFID_PC", CPU_BITS);

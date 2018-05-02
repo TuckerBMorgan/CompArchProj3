@@ -19,6 +19,7 @@ extern Bus instr_abus;
 extern Bus if_pc_thru;
 extern Bus mux_to_pc;
 extern Bus mux_to_ifid;
+extern Bus injection_bus;
 extern Bus jump_pc_bus;
 extern BusALU ir_immed_to_ifid_signexted_imm;
 extern StorageObject const_addr_inc;
@@ -26,6 +27,7 @@ extern StorageObject const_valid_on;
 extern StorageObject const_valid_off;
 extern StorageObject const_two;
 extern StorageObject jump_reg;
+extern StorageObject const_nop_value;//used for injecting nops into pipelines
 
 // IF/ID components
 

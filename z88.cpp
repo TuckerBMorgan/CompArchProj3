@@ -692,6 +692,9 @@ void connect() {
     const_addr_inc.connectsTo(addr_alu.OP1());
     const_valid_on.connectsTo(valid_bus.IN());
     const_valid_off.connectsTo(valid_bus.IN());
+    const_nop_value.connectsTo(injection_bus.IN());
+
+
 
     ifid.v->connectsTo(valid_bus.OUT());
     ifid.v->connectsTo(id_v_thru.IN());
@@ -730,11 +733,13 @@ void connect() {
     idex.v->connectsTo(ex_v_thru.IN());
     idex.ir->connectsTo(id_ir_thru.OUT());
     idex.ir->connectsTo(ex_ir_thru.IN());
+    idex.ir->connectsTo(inject_bus.OUT();
     idex.imm->connectsTo(ex_imm_thru.IN());
     idex.pc->connectsTo(id_pc_thru.OUT());
     idex.pc->connectsTo(ex_pc_thru.IN());
     idex.npc->connectsTo(id_npc_thru.OUT());
     idex.npc->connectsTo(ex_npc_thru.IN());
+    
     idex.npc->connectsTo(ex_alu.OP1());
     idex.a->connectsTo(op1_bus.OUT());
     idex.a->connectsTo(ex_alu.OP1());
@@ -757,6 +762,7 @@ void connect() {
 
     //TODO COND?????
     exmem.v->connectsTo(ex_v_thru.OUT());
+    exmem.ir->connectsTo(inject_bus.OUT();
     exmem.v->connectsTo(mem_v_thru.IN());
     exmem.ir->connectsTo(ex_ir_thru.OUT());
     exmem.imm->connectsTo(ex_imm_thru.OUT());
@@ -785,6 +791,58 @@ void connect() {
     memwb.lmd->connectsTo(wb_bus.IN());
 }
 
+
+
+//call this function before the first stage of the pipeline
+//if it returns true, skip the current if stage and place a nop in its place
+bool stall_check_for_idex() {
+    //are the two registers ok, this avoids problems on unsaturated or stalled pipeline
+    if(ifid->v.value() == true && idex->v.value() == true) {
+           //if it is a special R-R ALU op
+        if((*ifid)(31, 26) == 0) {
+            if((*ifid)(5, 0) >= 16 && (*ifid)(5, 0) <= 25) {
+                if((*idex.ir)(20, 16) == (*ifid.ir)(25, 21)) {
+                    return true;
+                }        
+            }
+        }
+        else if((*idex.ir)(20, 16) == (*ifid.ir)(20, 16) ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool stall_check_for_exmem() {
+
+    if(idex->v.value() == true && exmem->v.value() == true) {
+        if((*ifid.ir)(31, 26) <= 50) {
+            return false;
+        }
+
+        if((*ifid.ir)(25, 21) == (*exmem.ir)(20, 16)){
+            return true;
+        }
+        else if((*ifid.ir)(25, 21) == (*exmem.ir)(20, 16)) {
+            return true;
+        }
+
+    }
+    return false;
+}
+
+//which_stage == true, inject nop into idex
+//which_stage == false, ibject nop into exmem
+void inject_nop_into_stage(bool which_stage) {
+    injection_bus.pullFrom(const_nop_value);
+    if(which_stage) { 
+        idex.ir->latchFrom(injection_bus.OUT());
+    }
+    else {
+        exmem.ir->latchFrom(injection_bus.OUT());
+    }
+}
+
 void simulate(char *objfile) {
     //CPUObject::debug |= CPUObject::trace;
     // Load object file
@@ -794,12 +852,21 @@ void simulate(char *objfile) {
     pc.latchFrom(instr_mem.READ());
     Clock::tick();
     while(!done) {
+        bool preform_idex_stall_load = stall_check_for_idex();
+        bool preform_exmem_stall_load = stall_check_for_exmem();
+
         wb_stage_first_clock();
         mem_stage_first_clock();
-        ex_stage_first_clock();
-        id_stage_first_clock();
-        if_stage_first_clock();
+        if(!preform_exmem_stall_load) {
+            ex_stage_first_clock();
+        }
+
+        if(!preform_idex_stall_load || !preform_exmem_stall_load) {
+            id_stage_first_clock();
+            if_stage_first_clock();
+        }
         Clock::tick();
+
         wb_stage_second_clock();
         mem_stage_second_clock();
         ex_stage_second_clock();
