@@ -686,10 +686,6 @@ void mem_stage_second_clock() {
 
 
 void wb_stage_first_clock() {
-
-}
-
-void wb_stage_second_clock() {
     if(memwb.v->value() == 0) return;
     OPCodeClass opc = from_full_instruction_return_opcode_class(memwb.ir);
 
@@ -820,6 +816,9 @@ void wb_stage_second_clock() {
         }
         cout << '\n';
     }
+}
+
+void wb_stage_second_clock() {
 }
 
 void connect() {
