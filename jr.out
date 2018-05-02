@@ -5,19 +5,17 @@ IMemory sets starting address to 100
 DMemory sets starting address to 100
 00000100:  23    LW      R1[00000210]
 00000104:  23    LW      R2[00000220]
-00000108:  23    LW      R3[00000000]
-0000010c:  23    LW      R4[8c030058]
-00000110:  23    LW      R5[00000000]
-00000114:  23    LW      R6[00000000]
-00000118:  23    LW      R7[04000000]
+00000108:  23    LW      R3[00000230]
+0000010c:  23    LW      R4[00000240]
+00000110:  23    LW      R5[00000250]
+00000114:  23    LW      R6[00000260]
+00000118:  23    LW      R7[00000270]
 0000011c:  01    NOP    
-00000120:  01    NOP    
-00000124:  01    NOP    
-00000128:  00 02 JR     
-0000012c:  01    NOP    
-00000000:  00 00 HALT   
-Machine Halted - HALT instruction executed
+InFlow JUMP_REG_THRU32 is trying to pull from MEMWB_ALU_OUT.  They are not connected.
 
-Simulated time 35 cycles
+Simulation aborted - ArchLib runtime error
+Cause: StorageObject pull from unconnected component
+
+Simulated time 23 cycles
 
 LAST CPUObject DESTROYED; END OF SIMULATION

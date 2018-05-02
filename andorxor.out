@@ -5,15 +5,15 @@ IMemory sets starting address to 100
 DMemory sets starting address to 100
 00000100:  23    LW      R1[aaaaaaaa]
 00000104:  23    LW      R2[55555555]
-00000108:  23    LW      R3[00000000]
+00000108:  23    LW      R3[99999999]
 0000010c:  01    NOP    
 00000110:  01    NOP    
 00000114:  01    NOP    
 00000118:  01    NOP    
 0000011c:  00 07 BREAK  
-     R1[aaaaaaaa]  R2[55555555]
+     R1[aaaaaaaa]  R2[55555555]  R3[99999999]
 00000120:  00 14 AND     R4[00000000]
-00000124:  00 14 AND     R5[00000000]
+00000124:  00 14 AND     R5[88888888]
 00000128:  00 14 AND     R6[00000000]
 0000012c:  00 15 OR      R7[ffffffff]
 00000130:  00 15 OR      R8[00000000]

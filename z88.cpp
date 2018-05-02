@@ -194,6 +194,8 @@ void id_stage_first_clock() {
 	  //idex.imm->latchFrom(sign_extend_alu.OUT());
     long op = (*ifid.ir)(31, 26);
     long low_op = (*ifid.ir)(5,0);
+
+    //J and JAL
     if(op == 2 || op == 3) {
         jump_reg.latchFrom(jump_reg_thru.OUT());
         jump_reg_thru.IN().pullFrom(*ifid.ir);
@@ -201,12 +203,30 @@ void id_stage_first_clock() {
             branch_alu.OP1().pullFrom(const_eight);
             branch_alu.OP2().pullFrom(*ifid.pc);
             branch_alu.perform(BusALU::op_add);
+            //do te
             reg_file[31]->latchFrom(branch_alu.OUT());
         }
     }
+
+    //JR and JALR
     if(op == 0 && (low_op == 2 || low_op == 3)) {
-        jump_reg.latchFrom(jump_reg_thru32.OUT());
-        jump_reg_thru32.IN().pullFrom(*reg_file[(*ifid.ir)(25, 21)]);
+//        jump_reg.latchFrom(jump_reg_thru32.OUT());
+//        jump_reg_thru32.IN().pullFrom(*reg_file[(*ifid.ir)(25, 21)]);
+        
+        long idex_rs = (*idex.ir)(25, 21);
+        long memwb_rd = (*memwb.ir)(20, 16);
+        long memwb_rt = (*memwb.ir)(15, 11);
+
+
+        if(idex_rs == memwb_rd || idex_rs == memwb_rt) {
+            jump_reg.latchFrom(jump_reg_thru32.OUT());
+            jump_reg_thru32.IN().pullFrom(*memwb.alu_out);
+        }
+        else {
+            jump_reg.latchFrom(jump_reg_thru32.OUT());
+            jump_reg_thru32.IN().pullFrom(*reg_file[(*ifid.ir)(25, 21)]);
+        }
+
         if(low_op == 3) {
             branch_alu.OP1().pullFrom(const_eight);
             branch_alu.OP2().pullFrom(*ifid.pc);
@@ -819,6 +839,7 @@ void wb_stage_first_clock() {
 }
 
 void wb_stage_second_clock() {
+
 }
 
 void connect() {
