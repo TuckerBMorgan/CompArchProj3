@@ -10,11 +10,11 @@ DMemory sets starting address to 100
 00000110:  01    NOP    
 00000114:  00 12 SUB     R5[f0000000]
 00000118:  00 12 SUB     R6[1000ffff]
-0000011c:  00 12 SUB     R7[00000000]
-00000120:  00 12 SUB     R8[00000000]
-00000124:  00 00 HALT   
-Machine Halted - HALT instruction executed
+InFlow EX_ALU.Op1 is trying to pull from MEMWB_LMD.  They are not connected.
 
-Simulated time 29 cycles
+Simulation aborted - ArchLib runtime error
+Cause: StorageObject pull from unconnected component
+
+Simulated time 22 cycles
 
 LAST CPUObject DESTROYED; END OF SIMULATION

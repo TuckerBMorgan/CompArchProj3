@@ -322,7 +322,7 @@ void ex_stage_second_clock() {
     bool ex_mem_destination_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(25, 21) : false;
     bool ex_mem_destination_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(20, 16) : false;
 
-    if( (*exmem.ir)(31, 26) != 0) {
+    if( (*exmem.ir)(31, 26) != 0 && (*exmem.ir)(31, 26) == 35) {
         ex_mem_destination_equals_id_ex_source = false;
         ex_mem_destination_equals_id_ex_temp = false;
     }
@@ -330,7 +330,7 @@ void ex_stage_second_clock() {
     bool mem_wb_destination_equals_id_ex_source = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(25, 21) : false;
     bool mem_wb_destination_equals_id_ex_temp = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(20, 16) : false;
 
-    if((*memwb.ir)(31, 26) != 0) {
+    if((*memwb.ir)(31, 26) != 0 && (*memwb.ir)(31, 26) == 35) {
         mem_wb_destination_equals_id_ex_source = false;
         mem_wb_destination_equals_id_ex_temp = false;
     }
@@ -470,7 +470,7 @@ void ex_stage_second_clock() {
                 }
                 else {
                     if(should_forward()) { 
-                        ex_alu.OP1().pullFrom(*memwb.alu_out);
+                        ex_alu.OP1().pullFrom(*memwb.lmd);
                     }
                     else {
                         //top alu op
@@ -503,7 +503,7 @@ void ex_stage_second_clock() {
                 }
                 else {
                     if(should_forward()) { 
-                        ex_alu.OP2().pullFrom(*memwb.alu_out);
+                        ex_alu.OP2().pullFrom(*memwb.lmd);
                     }
                     else {
                         ex_alu.OP2().pullFrom(*idex.b);
@@ -618,6 +618,7 @@ void ex_stage_second_clock() {
                     }
                }
                else {
+                   
                     if(should_forward()) { 
                         ex_alu.OP1().pullFrom(*memwb.alu_out);
                     } 
@@ -907,6 +908,7 @@ void connect() {
     idex.a->connectsTo(ex_alu.OP1());
     idex.a->connectsTo(ex_alu.OP2());
     idex.a->connectsTo(ex_alu.OUT());
+    
 
 
     idex.a->connectsTo(rs_lower5.IN());
@@ -957,6 +959,8 @@ void connect() {
     memwb.alu_out->connectsTo(ex_alu.OP2());
     memwb.lmd->connectsTo(data_mem.READ());
     memwb.lmd->connectsTo(wb_bus.IN());
+    memwb.lmd->connectsTo(ex_alu.OP1());
+    memwb.lmd->connectsTo(ex_alu.OP2());
 }
 
 
@@ -1024,7 +1028,7 @@ void inject_nop_into_stage(bool which_stage) {
 }
 
 void simulate(char *objfile) {
-   // CPUObject::debug |= CPUObject::trace;
+  //  CPUObject::debug |= CPUObject::trace;
     // Load object file
 
     instr_mem.load(objfile);
