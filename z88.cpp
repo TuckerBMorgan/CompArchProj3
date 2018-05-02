@@ -267,18 +267,23 @@ void ex_stage_first_clock() {
 void ex_stage_second_clock() {
     if(idex.v->value() == 0) return;
 	
+
+    bool is_exmem_valid = exmem.v->value() == true;
+    cout << "THIS SHOULD BE FALSE" << is_exmem_valid << "\n";
+    bool is_memwb_valid = memwb.v->value() == true;
+
     //we preform all forwarding condtion tests here, simply easier to keep track of them in this form
-	bool ex_mem_destination_equals_id_ex_source = (*exmem.ir)(15, 11) == (*idex.ir)(25, 21);
-	bool ex_mem_destination_equals_id_ex_temp = (*exmem.ir)(15, 11) == (*idex.ir)(20, 16);
+	bool ex_mem_destination_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(25, 21) : false;
+	bool ex_mem_destination_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(20, 16) : false;
 
-    bool mem_wb_destination_equals_id_ex_source = (*memwb.ir)(15, 11) == (*idex.ir)(25, 21);
-    bool mem_wb_destination_equals_id_ex_temp = (*memwb.ir)(15, 11) == (*idex.ir)(20, 16);
+    bool mem_wb_destination_equals_id_ex_source = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(25, 21) : false;
+    bool mem_wb_destination_equals_id_ex_temp = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(20, 16) : false;
     
-    bool ex_mem_temp_equals_id_ex_source = (*exmem.ir)(20, 16) == (*idex.ir)(25, 21);
-	bool ex_mem_temp_equals_id_ex_temp = (*exmem.ir)(20, 16) == (*idex.ir)(20, 16);
+    bool ex_mem_temp_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(20, 16) == (*idex.ir)(25, 21) : false;
+	bool ex_mem_temp_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(20, 16) == (*idex.ir)(20, 16) : false;
 
-    bool mem_wb_temp_equals_id_ex_source = (*memwb.ir)(20, 16) == (*idex.ir)(25, 21);
-    bool mem_wb_temp_equals_id_ex_temp = (*memwb.ir)(20, 16) == (*idex.ir)(20, 16);
+    bool mem_wb_temp_equals_id_ex_source = is_memwb_valid ? (*memwb.ir)(20, 16) == (*idex.ir)(25, 21) : false;
+    bool mem_wb_temp_equals_id_ex_temp = is_memwb_valid ? (*memwb.ir)(20, 16) == (*idex.ir)(20, 16) : false;
 
     //only ALU and Load/Store opreations require we do this, but at the same time there is nore doing this for the branch insturctions as it doe not use the IR register
     ex_ir_thru.IN().pullFrom(*idex.ir);
@@ -471,6 +476,9 @@ void ex_stage_second_clock() {
         if(ex_mem_destination_equals_id_ex_source || mem_wb_destination_equals_id_ex_source 
            || ex_mem_temp_equals_id_ex_source || mem_wb_temp_equals_id_ex_source) {
                if(ex_mem_destination_equals_id_ex_source || ex_mem_temp_equals_id_ex_source) {
+                   cout << "NOT THE BEEES\n";
+
+                   cout << ex_mem_destination_equals_id_ex_source << " " << mem_wb_destination_equals_id_ex_source << " " << ex_mem_temp_equals_id_ex_source << " " << mem_wb_temp_equals_id_ex_source;
                     ex_alu.OP1().pullFrom(*exmem.alu_out);
                }
                else {
@@ -496,6 +504,7 @@ void ex_stage_second_clock() {
          if(ex_mem_destination_equals_id_ex_source || mem_wb_destination_equals_id_ex_source 
            || ex_mem_temp_equals_id_ex_source || mem_wb_temp_equals_id_ex_source) {
                if(ex_mem_destination_equals_id_ex_source || ex_mem_temp_equals_id_ex_source) {
+                   cout << "AHHHHHH\n";
                     ex_alu.OP1().pullFrom(*exmem.alu_out);
                }
                else {
@@ -733,7 +742,7 @@ void connect() {
     idex.v->connectsTo(ex_v_thru.IN());
     idex.ir->connectsTo(id_ir_thru.OUT());
     idex.ir->connectsTo(ex_ir_thru.IN());
-    idex.ir->connectsTo(inject_bus.OUT();
+    idex.ir->connectsTo(injection_bus.OUT());
     idex.imm->connectsTo(ex_imm_thru.IN());
     idex.pc->connectsTo(id_pc_thru.OUT());
     idex.pc->connectsTo(ex_pc_thru.IN());
@@ -762,7 +771,7 @@ void connect() {
 
     //TODO COND?????
     exmem.v->connectsTo(ex_v_thru.OUT());
-    exmem.ir->connectsTo(inject_bus.OUT();
+    exmem.ir->connectsTo(injection_bus.OUT());
     exmem.v->connectsTo(mem_v_thru.IN());
     exmem.ir->connectsTo(ex_ir_thru.OUT());
     exmem.imm->connectsTo(ex_imm_thru.OUT());
@@ -797,10 +806,10 @@ void connect() {
 //if it returns true, skip the current if stage and place a nop in its place
 bool stall_check_for_idex() {
     //are the two registers ok, this avoids problems on unsaturated or stalled pipeline
-    if(ifid->v.value() == true && idex->v.value() == true) {
+    if(ifid.v->value() == true && idex.v->value() == true) {
            //if it is a special R-R ALU op
-        if((*ifid)(31, 26) == 0) {
-            if((*ifid)(5, 0) >= 16 && (*ifid)(5, 0) <= 25) {
+        if((*ifid.ir)(31, 26) == 0) {
+            if((*ifid.ir)(5, 0) >= 16 && (*ifid.ir)(5, 0) <= 25) {
                 if((*idex.ir)(20, 16) == (*ifid.ir)(25, 21)) {
                     return true;
                 }        
@@ -815,7 +824,7 @@ bool stall_check_for_idex() {
 
 bool stall_check_for_exmem() {
 
-    if(idex->v.value() == true && exmem->v.value() == true) {
+    if(idex.v->value() == true && exmem.v->value() == true) {
         if((*ifid.ir)(31, 26) <= 50) {
             return false;
         }
@@ -834,7 +843,7 @@ bool stall_check_for_exmem() {
 //which_stage == true, inject nop into idex
 //which_stage == false, ibject nop into exmem
 void inject_nop_into_stage(bool which_stage) {
-    injection_bus.pullFrom(const_nop_value);
+    injection_bus.IN().pullFrom(const_nop_value);
     if(which_stage) { 
         idex.ir->latchFrom(injection_bus.OUT());
     }
@@ -880,7 +889,7 @@ void simulate(char *objfile) {
         if(preform_idex_stall_load) {
             inject_nop_into_stage(true);
         }
-        
+
         if(preform_exmem_stall_load) {
             inject_nop_into_stage(false);
         }
