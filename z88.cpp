@@ -26,6 +26,8 @@ enum OPCodeClass {
 };
 
 
+//this function is used for getting the opcode class
+//it is made so that it is easier and cleaner to handle different instructions in classes
 OPCodeClass from_full_instruction_return_opcode_class(StorageObject* ir) {
     long higher_op = (*ir)(31, 26);
 
@@ -110,6 +112,7 @@ const char* rnames[32] = {
     "R25", "R26", "R27", "R28", "R29", "R30", "R31"
 };
 
+//this just returns the opcode as a formatted string, used in printing for the most part
 const char* get_opcode_string_from_ir(StorageObject* ir) {
     long opcode = (*ir)(31, 26);
     if(opcode == 0) {
@@ -127,6 +130,7 @@ const char* get_opcode_string_from_ir(StorageObject* ir) {
 }
 
 void if_stage_first_clock() {
+    //get the next instruction from memory
     instr_abus.IN().pullFrom(pc);
     instr_mem.MAR().latchFrom(instr_abus.OUT());
 }
@@ -184,39 +188,45 @@ void if_stage_second_clock() {
     ifid.v->set();
 }
 
+
+
 void id_stage_first_clock() {
-  //this function was intentionally left blank
+
     if(ifid.v->value() == 0) return;
-	  sign_extend_alu.OP1().pullFrom(*ifid.ir);
-	  sign_extend_alu.OP2().pullFrom(const_sign_extend_mask);
-	  sign_extend_alu.perform(BusALU::op_extendSign);
+
+    //setting up the sign extention used for branch and jump instructions 
+    sign_extend_alu.OP1().pullFrom(*ifid.ir);
+    sign_extend_alu.OP2().pullFrom(const_sign_extend_mask);
+    sign_extend_alu.perform(BusALU::op_extendSign);
     sign_extend_imm.latchFrom(sign_extend_alu.OUT());
-	  //idex.imm->latchFrom(sign_extend_alu.OUT());
+
+    //
     long op = (*ifid.ir)(31, 26);
     long low_op = (*ifid.ir)(5,0);
 
     //J and JAL
     if(op == 2 || op == 3) {
+        
         jump_reg.latchFrom(jump_reg_thru.OUT());
         jump_reg_thru.IN().pullFrom(*ifid.ir);
+
         if(op == 3) {
+            //setting up the mask, and then setting the PC
             branch_alu.OP1().pullFrom(const_eight);
             branch_alu.OP2().pullFrom(*ifid.pc);
             branch_alu.perform(BusALU::op_add);
-            //do te
             reg_file[31]->latchFrom(branch_alu.OUT());
         }
     }
 
     //JR and JALR
     if(op == 0 && (low_op == 2 || low_op == 3)) {
-//        jump_reg.latchFrom(jump_reg_thru32.OUT());
-//        jump_reg_thru32.IN().pullFrom(*reg_file[(*ifid.ir)(25, 21)]);
         
+
+        //do we need to do jump forwarding
         long idex_rs = (*idex.ir)(25, 21);
         long memwb_rd = (*memwb.ir)(20, 16);
         long memwb_rt = (*memwb.ir)(15, 11);
-
 
         if(idex_rs == memwb_rd || idex_rs == memwb_rt) {
             jump_reg.latchFrom(jump_reg_thru32.OUT());
@@ -227,6 +237,7 @@ void id_stage_first_clock() {
             jump_reg_thru32.IN().pullFrom(*reg_file[(*ifid.ir)(25, 21)]);
         }
 
+        
         if(low_op == 3) {
             branch_alu.OP1().pullFrom(const_eight);
             branch_alu.OP2().pullFrom(*ifid.pc);
@@ -236,6 +247,7 @@ void id_stage_first_clock() {
     }
 }
 
+//mostly moving things along
 void id_stage_second_clock() {
     if(ifid.v->value() == 0) return;
 
@@ -267,7 +279,8 @@ void id_stage_second_clock() {
     }
 }
 
-
+//a function used in the deciscions to forward or not, takes care 
+//of the left side of the table, amking sure we only forward on the correct source op code
 bool should_forward() {
     bool ex_mem_is_r_r = false;
     bool mem_wb_is_r_r = false;
@@ -305,8 +318,6 @@ void ex_stage_first_clock() {
     long is_special = (*idex.ir)(31, 26);
     long is_nor = (*idex.ir)(5, 0);
 
-
-
     rs_lower5.IN().pullFrom(*(idex.a));
     shift_amt.latchFrom(rs_lower5.OUT());
 }
@@ -319,6 +330,11 @@ void ex_stage_second_clock() {
     bool is_memwb_valid = memwb.v->value() == true;
 
 
+
+    //--------------------------------------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------------------------------------
+    //all the code below is used in the forwarding detetction
+    //we do the initial tests up here, so all that code below can avoid having complicated tests all over
     bool ex_mem_destination_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(25, 21) : false;
     bool ex_mem_destination_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(20, 16) : false;
 
@@ -340,17 +356,13 @@ void ex_stage_second_clock() {
 
     bool mem_wb_temp_equals_id_ex_source = is_memwb_valid ? (*memwb.ir)(20, 16) == (*idex.ir)(25, 21) : false;
     bool mem_wb_temp_equals_id_ex_temp = is_memwb_valid ? (*memwb.ir)(20, 16) == (*idex.ir)(20, 16) : false;
+    //------------------------------------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------------------------------------
 
-    //we preform all forwarding condtion tests here, simply easier to keep track of them in this form
-   // cout << *exmem.ir << " || " << *idex.ir << "\n";
-   // cout << (*exmem.ir)(15, 11) << " || " << (*idex.ir)(25, 21) << "\n";
-    if(is_exmem_valid) {
-     //   cout << get_opcode_string_from_ir(exmem.ir) << " || " << get_opcode_string_from_ir(idex.ir);
-    }
 
     //only ALU and Load/Store opreations require we do this, but at the same time there is nore doing this for the branch insturctions as it doe not use the IR register
     ex_ir_thru.IN().pullFrom(*idex.ir);
-    exmem.ir->latchFrom(ex_ir_thru.OUT());//this wil get excuted when we perform the alu op
+    exmem.ir->latchFrom(ex_ir_thru.OUT());
     ex_v_thru.IN().pullFrom(*idex.v);
     exmem.v->latchFrom(ex_v_thru.OUT());
     ex_pc_thru.IN().pullFrom(*idex.pc);
@@ -374,8 +386,7 @@ void ex_stage_second_clock() {
         if(ir_type == 0 && ((is_shifts >= 37 && is_shifts <= 39) || (is_shifts >= 45 && is_shifts <= 47))){//ALLL SHIFT OPERATIONS
 
             ex_alu.OP1().pullFrom(*idex.b);
-
-
+            
             if(five_three == 4) {
                 long shft = (*idex.ir)(10, 6);
                 ex_alu.OP2().pullFrom(*(shifty_boys[shft]));
@@ -447,7 +458,8 @@ void ex_stage_second_clock() {
             exmem.alu_out->latchFrom(ex_alu.OUT());
             return;
         }
-
+    
+        //LUI
         if(ir_type == 39) {
             ex_alu.OP1().pullFrom(*idex.imm);
             ex_alu.OP2().pullFrom(*(shifty_boys[16]));
@@ -456,7 +468,7 @@ void ex_stage_second_clock() {
             return;
         }
 
-
+        ////forwarding code
         if(ex_mem_destination_equals_id_ex_source || mem_wb_destination_equals_id_ex_source 
             || ex_mem_temp_equals_id_ex_source || mem_wb_temp_equals_id_ex_temp) {
                 if(ex_mem_destination_equals_id_ex_source || ex_mem_temp_equals_id_ex_source) {
@@ -479,6 +491,7 @@ void ex_stage_second_clock() {
                 }
         
         }
+        //if we preform no forwarding
         else {
             //top alu op
             ex_alu.OP1().pullFrom(*idex.a);
@@ -488,7 +501,7 @@ void ex_stage_second_clock() {
         int func;
 
         if(is_special == 0) {//in this case is_special points out that we are preforming a R-R alu op
-
+        //forwarding
             if(ex_mem_destination_equals_id_ex_temp || ex_mem_temp_equals_id_ex_source || 
                mem_wb_destination_equals_id_ex_temp || mem_wb_temp_equals_id_ex_source || mem_wb_temp_equals_id_ex_temp) {
 
@@ -510,6 +523,7 @@ void ex_stage_second_clock() {
                     }
                 }
             }
+            //no forwarding
             else {
                 ex_alu.OP2().pullFrom(*idex.b);
             }
@@ -677,9 +691,12 @@ void mem_stage_first_clock() {
 
 void mem_stage_second_clock() {
     if(exmem.v->value() == 0) return;
+    
     mem_ir_thru.IN().pullFrom(*exmem.ir);
     memwb.ir->latchFrom(mem_ir_thru.OUT());
+
     OPCodeClass opc = from_full_instruction_return_opcode_class(exmem.ir);
+    
     mem_v_thru.IN().pullFrom(*exmem.v);
     memwb.v->latchFrom(mem_v_thru.OUT());
     mem_pc_thru.IN().pullFrom(*exmem.pc);
