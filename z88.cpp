@@ -860,8 +860,7 @@ void simulate(char *objfile) {
         if(!preform_exmem_stall_load) {
             ex_stage_first_clock();
         }
-
-        if(!preform_idex_stall_load || !preform_exmem_stall_load) {
+        if(!preform_idex_stall_load && !preform_exmem_stall_load) {
             id_stage_first_clock();
             if_stage_first_clock();
         }
@@ -869,9 +868,23 @@ void simulate(char *objfile) {
 
         wb_stage_second_clock();
         mem_stage_second_clock();
-        ex_stage_second_clock();
-        id_stage_second_clock();
-        if_stage_second_clock();
+        if(!preform_exmem_stall_load) {
+            ex_stage_second_clock();
+        }
+        
+        if(!preform_idex_stall_load && !preform_exmem_stall_load) {   
+            id_stage_second_clock();
+            if_stage_second_clock();
+        }
+
+        if(preform_idex_stall_load) {
+            inject_nop_into_stage(true);
+        }
+        
+        if(preform_exmem_stall_load) {
+            inject_nop_into_stage(false);
+        }
+        
         Clock::tick();
     }
     cout << "Machine Halted - " << culprit;
