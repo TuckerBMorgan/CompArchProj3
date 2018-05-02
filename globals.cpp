@@ -26,7 +26,7 @@ IfIdReg ifid = {
 }; 
 
 // ID components
-StorageObject r0("R0", CPU_BITS);
+StorageObject r0("R0", CPU_BITS, 0x00);
 StorageObject r1("R1", CPU_BITS);
 StorageObject r2("R2", CPU_BITS);
 StorageObject r3("R3", CPU_BITS);

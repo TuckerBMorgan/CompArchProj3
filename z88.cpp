@@ -285,13 +285,7 @@ void ex_stage_first_clock() {
     long is_special = (*idex.ir)(31, 26);
     long is_nor = (*idex.ir)(5, 0);
 
-    /*
-    if(is_special == 0 && is_nor == 23) {//if this is a nor operation, lets not it and then drop it back into idex.a, 23 is the func code for nor
-        ex_alu.OP1().pullFrom(*idex.a);
-        ex_alu.perform(BusALU::op_not);
-        idex.a->latchFrom(ex_alu.OUT());
-    }
-    */
+
 
     rs_lower5.IN().pullFrom(*(idex.a));
     shift_amt.latchFrom(rs_lower5.OUT());
@@ -308,8 +302,18 @@ void ex_stage_second_clock() {
     bool ex_mem_destination_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(25, 21) : false;
     bool ex_mem_destination_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(20, 16) : false;
 
+    if( (*exmem.ir)(31, 26) != 0) {
+        ex_mem_destination_equals_id_ex_source = false;
+        ex_mem_destination_equals_id_ex_temp = false;
+    }
+
     bool mem_wb_destination_equals_id_ex_source = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(25, 21) : false;
     bool mem_wb_destination_equals_id_ex_temp = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(20, 16) : false;
+
+    if((*memwb.ir)(31, 26) != 0) {
+        mem_wb_destination_equals_id_ex_source = false;
+        mem_wb_destination_equals_id_ex_temp = false;
+    }
         
     bool ex_mem_temp_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(20, 16) == (*idex.ir)(25, 21) : false;
     bool ex_mem_temp_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(20, 16) == (*idex.ir)(20, 16) : false;
