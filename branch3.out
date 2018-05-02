@@ -1,8 +1,8 @@
 CPU "ARCH" Simulator, 2.5a(Jan 22 2015)
 -----------------------------------------
 
-INSTR_MEM sets starting address to 50
-DATA_MEM sets starting address to 50
+IMemory sets starting address to 50
+DMemory sets starting address to 50
 00000050:  27    LUI     R22[ffff0000]
 00000054:  02    J      
 00000058:  27    LUI     R23[7fff0000]
@@ -34,6 +34,7 @@ DATA_MEM sets starting address to 50
      R11[0ace0000]  R12[0ace0000]  R13[0ace0000]  R14[0ace0000]
      R22[ffff0000]  R23[7fff0000]
 00000504:  00 00 HALT   
+Machine Halted - HALT instruction executed
 
 Simulated time 67 cycles
 

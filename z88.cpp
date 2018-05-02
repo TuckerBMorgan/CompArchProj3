@@ -247,6 +247,39 @@ void id_stage_second_clock() {
     }
 }
 
+
+bool should_forward() {
+    bool ex_mem_is_r_r = false;
+    bool mem_wb_is_r_r = false;
+    bool ex_mem_is_alu_imm = false;
+    bool mem_wb_is_alu_imm_or_load = false;
+
+    long ex_mem_opcode = (*exmem.ir)(31, 26);
+    long ex_mem_func = (*exmem.ir)(5, 0);
+    if(ex_mem_opcode == 0 && (ex_mem_func >= 16 && ex_mem_func < 24)) {
+        return true;
+    }
+    
+    if(ex_mem_opcode >= 16 && ex_mem_opcode <= 24) {
+        return true;
+    }
+
+    long mem_wb_opcode = (*memwb.ir)(31, 26);
+    long mem_wb_func = (*memwb.ir)(5, 0);
+    if(mem_wb_opcode == 0 && (mem_wb_func >= 16 && mem_wb_func < 24)) {
+        return true;
+    }
+
+    if(mem_wb_opcode >= 16 && mem_wb_opcode <= 24) {
+        return true;
+    }
+    
+    if(mem_wb_opcode == 35) {
+        return true;
+    }
+    return false;
+}
+
 void ex_stage_first_clock() {
     if(idex.v->value() == 0) return;
     long is_special = (*idex.ir)(31, 26);
@@ -271,11 +304,24 @@ void ex_stage_second_clock() {
     bool is_exmem_valid = exmem.v->value() == true;
     bool is_memwb_valid = memwb.v->value() == true;
 
+
+    bool ex_mem_destination_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(25, 21) : false;
+    bool ex_mem_destination_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(20, 16) : false;
+
+    bool mem_wb_destination_equals_id_ex_source = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(25, 21) : false;
+    bool mem_wb_destination_equals_id_ex_temp = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(20, 16) : false;
+        
+    bool ex_mem_temp_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(20, 16) == (*idex.ir)(25, 21) : false;
+    bool ex_mem_temp_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(20, 16) == (*idex.ir)(20, 16) : false;
+
+    bool mem_wb_temp_equals_id_ex_source = is_memwb_valid ? (*memwb.ir)(20, 16) == (*idex.ir)(25, 21) : false;
+    bool mem_wb_temp_equals_id_ex_temp = is_memwb_valid ? (*memwb.ir)(20, 16) == (*idex.ir)(20, 16) : false;
+
     //we preform all forwarding condtion tests here, simply easier to keep track of them in this form
-    cout << *exmem.ir << " || " << *idex.ir << "\n";
-    cout << (*exmem.ir)(15, 11) << " || " << (*idex.ir)(25, 21) << "\n";
+   // cout << *exmem.ir << " || " << *idex.ir << "\n";
+   // cout << (*exmem.ir)(15, 11) << " || " << (*idex.ir)(25, 21) << "\n";
     if(is_exmem_valid) {
-        cout << get_opcode_string_from_ir(exmem.ir) << " || " << get_opcode_string_from_ir(idex.ir);
+     //   cout << get_opcode_string_from_ir(exmem.ir) << " || " << get_opcode_string_from_ir(idex.ir);
     }
 
     //only ALU and Load/Store opreations require we do this, but at the same time there is nore doing this for the branch insturctions as it doe not use the IR register
@@ -299,17 +345,6 @@ void ex_stage_second_clock() {
         long two_o = (*idex.ir)(2, 0);
         long five_three = (*idex.ir)(5, 3);
 
-        bool ex_mem_destination_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(25, 21) : false;
-        bool ex_mem_destination_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(20, 16) : false;
-
-        bool mem_wb_destination_equals_id_ex_source = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(25, 21) : false;
-        bool mem_wb_destination_equals_id_ex_temp = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(20, 16) : false;
-        
-        bool ex_mem_temp_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(20, 16) == (*idex.ir)(25, 21) : false;
-        bool ex_mem_temp_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(20, 16) == (*idex.ir)(20, 16) : false;
-
-        bool mem_wb_temp_equals_id_ex_source = is_memwb_valid ? (*memwb.ir)(20, 16) == (*idex.ir)(25, 21) : false;
-        bool mem_wb_temp_equals_id_ex_temp = is_memwb_valid ? (*memwb.ir)(20, 16) == (*idex.ir)(20, 16) : false;
 
 
         if(ir_type == 0 && ((is_shifts >= 37 && is_shifts <= 39) || (is_shifts >= 45 && is_shifts <= 47))){//ALLL SHIFT OPERATIONS
@@ -397,14 +432,28 @@ void ex_stage_second_clock() {
             return;
         }
 
+
         if(ex_mem_destination_equals_id_ex_source || mem_wb_destination_equals_id_ex_source 
             || ex_mem_temp_equals_id_ex_source || mem_wb_temp_equals_id_ex_temp) {
                 if(ex_mem_destination_equals_id_ex_source || ex_mem_temp_equals_id_ex_source) {
-                    ex_alu.OP1().pullFrom(*exmem.alu_out);
+                    if(should_forward()) { 
+                        ex_alu.OP1().pullFrom(*exmem.alu_out);
+                    }
+                    else {
+                        //top alu op
+                        ex_alu.OP1().pullFrom(*idex.a);
+                    }
                 }
                 else {
-                    ex_alu.OP1().pullFrom(*memwb.alu_out);
+                    if(should_forward()) { 
+                        ex_alu.OP1().pullFrom(*memwb.alu_out);
+                    }
+                    else {
+                        //top alu op
+                        ex_alu.OP1().pullFrom(*idex.a);
+                    }
                 }
+        
         }
         else {
             //top alu op
@@ -415,14 +464,26 @@ void ex_stage_second_clock() {
         int func;
 
         if(is_special == 0) {//in this case is_special points out that we are preforming a R-R alu op
+
             if(ex_mem_destination_equals_id_ex_temp || ex_mem_temp_equals_id_ex_source || 
                mem_wb_destination_equals_id_ex_temp || mem_wb_temp_equals_id_ex_source || mem_wb_temp_equals_id_ex_temp) {
 
                 if(ex_mem_destination_equals_id_ex_temp || ex_mem_temp_equals_id_ex_source) {
-                    ex_alu.OP2().pullFrom(*exmem.alu_out);
+                    if(should_forward()) { 
+                        ex_alu.OP2().pullFrom(*exmem.alu_out);
+                    }
+                    else {
+                        ex_alu.OP2().pullFrom(*idex.b);
+                    }
+
                 }
                 else {
-                    ex_alu.OP2().pullFrom(*memwb.alu_out);
+                    if(should_forward()) { 
+                        ex_alu.OP2().pullFrom(*memwb.alu_out);
+                    }
+                    else {
+                        ex_alu.OP2().pullFrom(*idex.b);
+                    }
                 }
             }
             else {
@@ -473,18 +534,6 @@ void ex_stage_second_clock() {
 
    if(ir_type == 35 || ir_type == 43) {//32 -> 48 are all the load store operations we care about, we are preforming nothing from the special table
 
-        bool ex_mem_destination_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(25, 21) : false;
-        bool ex_mem_destination_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(20, 16) : false;
-
-        bool mem_wb_destination_equals_id_ex_source = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(25, 21) : false;
-        bool mem_wb_destination_equals_id_ex_temp = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(20, 16) : false;
-        
-        bool ex_mem_temp_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(20, 16) == (*idex.ir)(25, 21) : false;
-        bool ex_mem_temp_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(20, 16) == (*idex.ir)(20, 16) : false;
-
-        bool mem_wb_temp_equals_id_ex_source = is_memwb_valid ? (*memwb.ir)(20, 16) == (*idex.ir)(25, 21) : false;
-        bool mem_wb_temp_equals_id_ex_temp = is_memwb_valid ? (*memwb.ir)(20, 16) == (*idex.ir)(20, 16) : false;
-
         //EX/MEM.IR ← ID/EX.IR;
         ex_ir_thru.IN().pullFrom(*idex.ir);
         exmem.ir->latchFrom(ex_ir_thru.OUT());
@@ -496,11 +545,26 @@ void ex_stage_second_clock() {
         if(ex_mem_destination_equals_id_ex_source || mem_wb_destination_equals_id_ex_source 
            || ex_mem_temp_equals_id_ex_source || mem_wb_temp_equals_id_ex_source) {
                if(ex_mem_destination_equals_id_ex_source || ex_mem_temp_equals_id_ex_source) {
-                    ex_alu.OP1().pullFrom(*exmem.alu_out);
+
+                    if(should_forward()) { 
+                        ex_alu.OP1().pullFrom(*exmem.alu_out);
+                    }
+                    else {
+                        //EX/MEM.ALUOutput ← ID/EX.A + ID/EX.Imm;
+                        ex_alu.OP1().pullFrom(*idex.a);
+                    }
                }
                else {
-                    ex_alu.OP1().pullFrom(*memwb.alu_out);
+                    if(should_forward()) { 
+                        ex_alu.OP1().pullFrom(*memwb.alu_out);
+                    }
+                    else {
+                        //EX/MEM.ALUOutput ← ID/EX.A + ID/EX.Imm;
+                        ex_alu.OP1().pullFrom(*idex.a);
+                    }
                }
+
+
            }
            else {
                 //EX/MEM.ALUOutput ← ID/EX.A + ID/EX.Imm;
@@ -517,25 +581,26 @@ void ex_stage_second_clock() {
 
     if(ir_type == 60 || ir_type == 61) {
         //Branch
-        bool ex_mem_destination_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(25, 21) : false;
-        bool ex_mem_destination_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(15, 11) == (*idex.ir)(20, 16) : false;
-
-        bool mem_wb_destination_equals_id_ex_source = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(25, 21) : false;
-        bool mem_wb_destination_equals_id_ex_temp = is_memwb_valid ? (*memwb.ir)(15, 11) == (*idex.ir)(20, 16) : false;
-        
-        bool ex_mem_temp_equals_id_ex_source = is_exmem_valid ? (*exmem.ir)(20, 16) == (*idex.ir)(25, 21) : false;
-        bool ex_mem_temp_equals_id_ex_temp = is_exmem_valid ? (*exmem.ir)(20, 16) == (*idex.ir)(20, 16) : false;
-
-        bool mem_wb_temp_equals_id_ex_source = is_memwb_valid ? (*memwb.ir)(20, 16) == (*idex.ir)(25, 21) : false;
-        bool mem_wb_temp_equals_id_ex_temp = is_memwb_valid ? (*memwb.ir)(20, 16) == (*idex.ir)(20, 16) : false;
 
          if(ex_mem_destination_equals_id_ex_source || mem_wb_destination_equals_id_ex_source 
            || ex_mem_temp_equals_id_ex_source || mem_wb_temp_equals_id_ex_source) {
                if(ex_mem_destination_equals_id_ex_source || ex_mem_temp_equals_id_ex_source) {
-                    ex_alu.OP1().pullFrom(*exmem.alu_out);
+                    if(should_forward()) { 
+                        ex_alu.OP1().pullFrom(*exmem.alu_out);
+                    } 
+                    else {
+                    // EXS/MEM.ALUOutput ← ID/EX.NPC + ID/EX.Imm;
+                        ex_alu.OP1().pullFrom(*idex.npc);
+                    }
                }
                else {
-                    ex_alu.OP1().pullFrom(*memwb.alu_out);
+                    if(should_forward()) { 
+                        ex_alu.OP1().pullFrom(*memwb.alu_out);
+                    } 
+                    else {
+                    // EXS/MEM.ALUOutput ← ID/EX.NPC + ID/EX.Imm;
+                        ex_alu.OP1().pullFrom(*idex.npc);
+                    }
                }
            }
         else {
@@ -561,7 +626,7 @@ void ex_stage_second_clock() {
 
 void mem_stage_first_clock() {
     if(exmem.v->value() == 0) return;
-
+ 
     OPCodeClass opc = from_full_instruction_return_opcode_class(exmem.ir);
     int fake_op_dis = (*exmem.ir)(31, 26);
 
@@ -675,27 +740,64 @@ void wb_stage_second_clock() {
 
         if(is_special == 0) {//all special alu opcode write into reg[Mem/WB.ir[rd]]
             size_t rd_index = (*memwb.ir)(15, 11);
-            cout << " " << rnames[rd_index] << "[" 
-              << setfill('0') << setw(8) << memwb.alu_out->value() << "]";
-            use_register = reg_file[rd_index];
+
+            if(rd_index != 0) {
+                cout << " " << rnames[rd_index] << "[" 
+                << setfill('0') << setw(8) << memwb.alu_out->value() << "]";
+            }
+            else {
+                cout << " " << rnames[rd_index] << "[" 
+                << setfill('0') << setw(8) << "00000000]";
+            }
+
+              if(rd_index != 0) {
+                use_register = reg_file[rd_index];
+              }
+              else {
+                  use_register = NULL;
+              }
         }
         else {//they write into reg[Mem/WB.ir[rt]]
             size_t rt_index = (*memwb.ir)(20, 16);
-            cout << " " << rnames[rt_index] << "["
-              << setfill('0') << setw(8) << memwb.alu_out->value() << "]";
-            use_register = reg_file[rt_index];
+
+            if(rt_index != 0) {
+                cout << " " << rnames[rt_index] << "["
+                << setfill('0') << setw(8) << memwb.alu_out->value() << "]";
+            }
+            else {
+                cout << " " << rnames[rt_index] << "["
+                << setfill('0') << setw(8) << "00000000]";
+            }
+
+              if(rt_index != 0) {
+                use_register = reg_file[rt_index];
+              }
+              else {
+                  use_register = NULL;
+              }
         }
 
         wb_bus.IN().pullFrom(*memwb.alu_out);
-        use_register->latchFrom(wb_bus.OUT());
+        if(use_register != NULL) { 
+            use_register->latchFrom(wb_bus.OUT());
+        }
     }
 
     if(opc == LOAD) {
         size_t rt_index = (*memwb.ir)(20, 16);
-        cout << " " << rnames[rt_index] << "["
-          << setfill('0') << setw(8) << memwb.lmd->value() << "]";
-        wb_bus.IN().pullFrom(*memwb.lmd);
-        reg_file[rt_index]->latchFrom(wb_bus.OUT());
+
+        if(rt_index != 0) {
+            cout << " " << rnames[rt_index] << "["
+            << setfill('0') << setw(8) << memwb.lmd->value() << "]";
+        }
+        else {
+            cout << " " << rnames[rt_index] << "["
+            << setfill('0') << setw(8) << "00000000]";
+        }
+        if(rt_index != 0) {
+            wb_bus.IN().pullFrom(*memwb.lmd);
+            reg_file[rt_index]->latchFrom(wb_bus.OUT());
+        }
     }
     cout << '\n';
     if(ir_val == 0 && other_ir == 0) {
@@ -818,6 +920,7 @@ void connect() {
     exmem.alu_out->connectsTo(mem_abus.IN());
     exmem.alu_out->connectsTo(data_mem.WRITE());
     exmem.alu_out->connectsTo(ex_alu.OP1());
+    exmem.alu_out->connectsTo(ex_alu.OP2());
     data_mem.MAR().connectsTo(mem_abus.OUT());
 
     memwb.v->connectsTo(mem_v_thru.OUT());
@@ -827,6 +930,7 @@ void connect() {
     memwb.alu_out->connectsTo(mem_alu_out_thru.OUT());
     memwb.alu_out->connectsTo(wb_bus.IN());
     memwb.alu_out->connectsTo(ex_alu.OP1());
+    memwb.alu_out->connectsTo(ex_alu.OP2());
     memwb.lmd->connectsTo(data_mem.READ());
     memwb.lmd->connectsTo(wb_bus.IN());
 }
@@ -836,9 +940,16 @@ void connect() {
 //call this function before the first stage of the pipeline
 //if it returns true, skip the current if stage and place a nop in its place
 bool stall_check_for_idex() {
+    
+    if((*idex.ir)(31, 26) != 35) {
+        return false;
+    }
+
     //are the two registers ok, this avoids problems on unsaturated or stalled pipeline
     if(ifid.v->value() == true && idex.v->value() == true) {
            //if it is a special R-R ALU op
+
+           
         if((*ifid.ir)(31, 26) == 0) {
             if((*ifid.ir)(5, 0) >= 16 && (*ifid.ir)(5, 0) <= 25) {
                 if((*idex.ir)(20, 16) == (*ifid.ir)(25, 21)) {
@@ -856,6 +967,10 @@ bool stall_check_for_idex() {
 }
 
 bool stall_check_for_exmem() {
+
+    if((*exmem.ir)(31, 26) != 35) {
+        return false;
+    }
     if(idex.v->value() == true && exmem.v->value() == true) {
         if((*ifid.ir)(31, 26) <= 50) {
             return false;
@@ -885,7 +1000,7 @@ void inject_nop_into_stage(bool which_stage) {
 }
 
 void simulate(char *objfile) {
-    //CPUObject::debug |= CPUObject::trace;
+   // CPUObject::debug |= CPUObject::trace;
     // Load object file
 
     instr_mem.load(objfile);
@@ -895,6 +1010,7 @@ void simulate(char *objfile) {
     while(!done) {
         bool preform_idex_stall_load = stall_check_for_idex();
         bool preform_exmem_stall_load = stall_check_for_exmem();
+
 
         wb_stage_first_clock();
         mem_stage_first_clock();

@@ -1,8 +1,8 @@
 CPU "ARCH" Simulator, 2.5a(Jan 22 2015)
 -----------------------------------------
 
-INSTR_MEM sets starting address to 500
-DATA_MEM sets starting address to 500
+IMemory sets starting address to 500
+DMemory sets starting address to 500
 00000500:  15    ORI     R1[00000100]
 00000504:  01    NOP    
 00000508:  01    NOP    
@@ -14,12 +14,12 @@ DATA_MEM sets starting address to 500
 00000520:  00 07 BREAK  
      R1[00000100]  R10[55555555]  R11[77777777]  R12[aaaaaaaa]
      R13[99999999]
-00000524:  23    LW      R0[55555555]
+00000524:  23    LW      R0[00000000]
 00000528:  01    NOP    
 0000052c:  01    NOP    
 00000530:  01    NOP    
 00000534:  01    NOP    
-00000538:  00 15 OR      R0[00000100]
+00000538:  00 15 OR      R0[00000000]
 0000053c:  01    NOP    
 00000540:  01    NOP    
 00000544:  01    NOP    
@@ -33,6 +33,7 @@ DATA_MEM sets starting address to 500
      R1[00000100]  R10[55555555]  R11[77777777]  R12[aaaaaaaa]
      R13[99999999]
 00000564:  00 00 HALT   
+Machine Halted - HALT instruction executed
 
 Simulated time 61 cycles
 

@@ -1,8 +1,8 @@
 CPU "ARCH" Simulator, 2.5a(Jan 22 2015)
 -----------------------------------------
 
-INSTR_MEM sets starting address to 30e
-DATA_MEM sets starting address to 30e
+IMemory sets starting address to 30e
+DMemory sets starting address to 30e
 0000030e:  10    ADDI    R1[00000000]
 00000312:  15    ORI     R2[00000100]
 00000316:  01    NOP    
@@ -184,17 +184,16 @@ DATA_MEM sets starting address to 30e
 00000336:  01    NOP    
 00000376:  23    LW      R1[12334567]
 0000037a:  23    LW      R2[23445678]
-0000037e:  23    LW      R3[34556789]
-00000382:  23    LW      R4[4566789a]
-00000386:  23    LW      R5[56778901]
-0000038a:  23    LW      R6[67889012]
-0000038e:  23    LW      R7[78990123]
-00000392:  23    LW      R8[01223456]
+0000037e:  23    LW      R3[00000000]
+00000382:  23    LW      R4[00000400]
+00000386:  23    LW      R5[00000000]
+0000038a:  23    LW      R6[00000000]
+0000038e:  23    LW      R7[00000000]
+00000392:  23    LW      R8[00000000]
 00000396:  00 07 BREAK  
-     R1[12334567]  R2[23445678]  R3[34556789]  R4[4566789a]
-     R5[56778901]  R6[67889012]  R7[78990123]  R8[01223456]
-   
+     R1[12334567]  R2[23445678]  R4[00000400]
 0000039a:  00 00 HALT   
+Machine Halted - HALT instruction executed
 
 Simulated time 387 cycles
 
